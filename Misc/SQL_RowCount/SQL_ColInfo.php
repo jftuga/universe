@@ -1,0 +1,388 @@
+<?php
+
+/*
+
+SQL_ColInfo.php
+-John Taylor
+Oct-17-2006
+Dec-20-2011 PHP 5.3.8
+
+The program returns column information about each table of each database
+from the sql server passed in from the command-line.  It excludes the
+the sql system tables.  You can exclude other databases by modifying
+the $db_excludes variable. You can pass an filename as an optional 2nd
+command line argument.
+
+Output
+------
+the number of columns, in curly braces
+data type of each column
+if NULL is allowed
+precision & length, length (in square brackets) refers to space on disk
+the default value (if there is one)
+
+It was tested with php 4.4.2 on Windows XP (SP2) on a SQL Server 2005 (SP1)
+server.  When viewing the output in a text editor, make sure that tabs are
+set to 8 spaces, otherwise the formatting will look awkward.
+
+See also:
+http://msdn2.microsoft.com/en-us/library/ms176077.aspx
+
+*/
+
+error_reporting(E_ERROR | E_WARNING | E_PARSE | E_NOTICE);
+set_time_limit(0);
+
+$db_server = "";
+$db_excludes = array( "master", "tempdb", "model", "msdb", "pubs", "Northwind" );
+$db = 0;
+$output_file = "";
+$using_output_file = 0;
+$fp = 0;
+$current_col_count = 0;
+
+$one_gig_a = pow(1024,3) - 2;
+$one_gig_z = pow(1024,3) + 2;
+$two_gig_a = $one_gig_a * 2;
+$two_gig_z = 2147483647;
+
+$line = "=============================================================================";
+$hdr = "Column Name\t\tData Type, Nullable, Precision [Length], def: Default";
+
+// display program command-line options
+function Usage() {
+	global $_SERVER;
+
+	print "\r\n";
+	print "Usage: " . $_SERVER["argv"][0] . " [ sql-server ] [ output file ]\r\n";
+	print "       [ output file ] is optional\r\n\r\n";
+	print "\r\n";
+	print "The program returns column information about each table of each database\r\n";
+	print "from the sql server passed in from the command-line.  It excludes the\r\n";
+	print "the sql system tables.\r\n";
+}
+
+// adapted from Klaus's comments, http://www.php.net/manual/en/function.mssql-get-last-message.php
+function get_sql_error() {
+	global $db;
+
+	$sql    = "select @@ERROR as code";
+	$result = @sqlsrv_query($db, $sql);
+	if( FALSE == $result ) {
+		return "[???] Unknown error.";
+	}
+
+	$row    = sqlsrv_fetch_array($result);
+	$code  = $row["code"]; // error code
+
+	// to get the correct msglangid, pick a value with this select stmt:
+	// select name,msglangid from master.dbo.syslanguages order by 1,2
+	// here are a few values...
+	// us_english=1033, britsh=1033, deutsch=1031, espanol=3082, francais=1036, italiano=1040, nederlands=1043, polski=1045
+	$sql = "select cast (description as varchar(255)) as errtxt from master.dbo.sysmessages where error = $code and msglangid = 1033";
+
+	$result = @sqlsrv_query($db, $sql);
+	if( FALSE == $result ) {
+		return "[???] Unknown error.";
+	}
+
+	$row = sqlsrv_fetch_array($result);
+	if($row) {
+		$text  = $row["errtxt"]; // error text (with placeholders)
+	} else {
+		$text  = "[???] Unknown error.";
+	}
+	sqlsrv_free_stmt($result);
+	return "[$code] $text";
+}
+
+// filenames can contain these 2 macros, useful if you periodically run this script from a Scheduled Task
+// replace __NOW__ with the current date & time in
+// this format: [year][month][day]_[hour][min][sec]
+// replace __SERVER__ with $_SERVER["argv"][1]
+function ExpandMacros($fname) {
+	global $_SERVER;
+
+	$now = strftime("%Y%m%d_%H%M%S");
+	$result = ereg_replace("__NOW__", $now, $fname);
+	return ereg_replace("__SERVER__", $_SERVER["argv"][1], $result);
+}
+
+// given a handle to a database, return an array of database names
+function GetDatabaseNames() {
+	global $db, $db_excludes;
+
+	$query = "select name from master.dbo.sysdatabases";
+	$result = sqlsrv_query( $db, $query );
+	do {
+		while ($row = sqlsrv_fetch_array($result)) {
+			$databases[] = $row[0];
+		}
+	} while ( sqlsrv_next_result($result));
+	sqlsrv_free_stmt($result);
+
+	return array_diff( $databases, $db_excludes);
+}
+
+// given a database name, return an array including filename and filesize
+// this will work only if you run the script directly from the database server itself
+function GetDatabaseMetaData($name) {
+	global $db;
+	$fsize = -1;
+
+	$query = "select FILENAME from MASTER.DBO.SYSDATABASES where NAME=\"$name\"";
+	$result = sqlsrv_query( $db, $query );
+	do {
+		while ($row = sqlsrv_fetch_array($result)) {
+			$fname = $row[0];
+			if(file_exists($fname)) {
+				$fsobj = new COM("Scripting.FileSystemObject");
+				$data = $fsobj->GetFile($fname);
+				$fsize = ($data->Size) + 1 - 1;
+				$data=0;
+			}
+		}
+	} while ( sqlsrv_next_result($result));
+	sqlsrv_free_stmt($result);
+
+	return array($fname, $fsize);
+}
+
+
+// given a handle to a database, return an array of table names within that database
+function GetTableNames() {
+	global $db;
+	$query = "select TABLE_NAME from INFORMATION_SCHEMA.TABLES where TABLE_TYPE = 'BASE TABLE' order by TABLE_NAME";
+	$result = sqlsrv_query( $db, $query );
+	do {
+		while ($row = sqlsrv_fetch_array($result)) {
+			$tables[] = $row[0];
+		}
+	} while ( sqlsrv_next_result($result));
+	sqlsrv_free_stmt($result);
+
+	return $tables;
+}
+
+
+// given an individual table, return the column information
+function ColNames($tbl, $db_name) {
+	global $db, $current_col_count;
+	global $one_gig_a, $one_gig_z, $two_gig_a, $two_gig_z;
+
+	$col_names = "";
+	$current_col_count = 0;
+
+	$query = "sp_columns $tbl";
+	$result = @sqlsrv_query( $db, $query );
+
+	if( FALSE == $result ) {
+		$err_msg = get_sql_error();
+		print "\r\n";
+		print "In database: " . $db_name . "\r\n";
+		print "Can not query table: " . $tbl . "\r\n";
+		print $err_msg . "\r\n";
+		return -1;
+	}
+	do {
+		while ($row = sqlsrv_fetch_array($result)) {
+			$name = trim($row[3]);
+			$dtype = trim($row[5]);
+			$precision = intval(trim($row[6]));
+			if( $precision >= $one_gig_a && $precision <= $one_gig_z ) {
+				$precision = "1 Gig";
+			}
+			if( $precision >= $two_gig_a && $precision <= $two_gig_z ) {
+				$precision = "2 Gigs";
+			}
+			if( $precision > $one_gig_a ) {
+				$precision = number_format($precision);
+			}
+
+			$length = trim($row[7]);
+			if( $length >= $one_gig_a && $length <= $one_gig_z ) {
+				$length = "1 Gig";
+			}
+			if( $length >= $two_gig_a && $length <= $two_gig_z ) {
+				$length = "2 Gigs";
+			}
+			if( $length > $one_gig_a ) {
+				$length = number_format($length);
+			}
+
+			//$nullable = trim($row[10]);
+			$column_def = trim($row[12]);
+			$is_nullable = trim($row[17]);
+			if( 0 == strlen($is_nullable) ) {
+				$is_nullable = "UNKNOWN";
+			}
+			$current_col_count += 1; 
+
+			if( strlen($name) <= 7 ) {
+				$tab = "\t\t\t\t\t";
+			} elseif( strlen($name) <= 15 ) {
+				$tab = "\t\t\t\t";
+			} elseif( strlen($name) <= 23 ) {
+				$tab = "\t\t\t";
+			} elseif( strlen($name) <= 31 ) {
+				$tab = "\t\t";
+			} else {
+				$tab = "\t";
+			}
+			
+			$last_comma = (strlen($column_def)) ? ", def: " : "";
+			$col_names = sprintf("%s\r\n%s%s%s, %s, %s [%s]%s %s", $col_names, $name, $tab, $dtype, $is_nullable, $precision, $length, $last_comma, $column_def);
+		}
+	} while ( sqlsrv_next_result($result));
+
+	sqlsrv_free_stmt($result);
+
+	$col_names = substr($col_names,strlen("\r\n")) . "\r\n\r\n";
+	return $col_names;
+}
+
+// given a list of tables, return the length of the longest table name
+// this is used to format the output & make it look nice
+function GetMaxTableNameLength($arr) {
+	$max = -1;
+	foreach($arr as $a) {
+		$l = strlen($a);
+		if( $l > $max ) {
+			$max = $l;
+		}
+	}
+
+	return $max;
+}
+
+// output that displays pertinent info about database table definitions
+function PrintRowCount($now, $db_name, $tables, $max_len) {
+	global $db_server, $line, $output_file, $using_output_file, $fp;
+	global $db_file_size, $line, $hdr, $current_col_count;
+
+	$db_file_size = 0;
+
+	$metadata = GetDatabaseMetaData($db_name);
+	$fname = $metadata[0];
+	$db_file_size = $metadata[1];
+
+	fwrite( $fp, "\r\n");
+	fwrite( $fp, "=============================================================================\r\n" );
+	fwrite( $fp, "date        : " . $now . "\r\n");
+	fwrite( $fp, "server      : " . $db_server . "\r\n");
+	fwrite( $fp, "database    : " . $db_name . "\r\n");
+	fwrite( $fp, "# of tables : " . sizeof($tables) . "\r\n");
+	fwrite( $fp, "=============================================================================\r\n" );
+	if( $db_file_size >= 0 ) {
+		fwrite( $fp, "file path   : " . $fname . "\r\n");
+		fwrite( $fp, "file size   : " . number_format($db_file_size) . "\r\n");
+	}
+	fwrite( $fp, "\r\n");
+	fwrite( $fp, $hdr . "\r\n\r\n");
+
+	$total_cols=0;
+	foreach( $tables as $t ) {
+		$count = ColNames($t, $db_name);
+		$line_tbl_name = substr("-------------------------------------------------------------------------------",0,strlen($db_name)+1+strlen($t)+5+strlen($current_col_count));
+		fwrite( $fp, $line_tbl_name . "\r\n");
+		fwrite( $fp, $db_name . "." . $t . " { " . $current_col_count . " }\r\n");
+		fwrite( $fp, $line_tbl_name . "\r\n");
+		fwrite( $fp, "$count\r\n" );
+
+		$total_cols += intval($current_col_count);
+	}
+	fwrite( $fp, "\r\n");
+
+	fflush($fp);
+	return $total_cols;
+}
+
+// program exectuion starts here
+function main() {
+	global $_SERVER;
+	global $db, $db_server,  $output_file, $using_output_file, $fp;
+	global $db_file_size, $line;
+
+	echo "main()\n";
+
+
+	$dbg = 1; // default is 0, set to 1 to turn on debugging
+
+	if( $_SERVER["argc"] != 2 && $_SERVER["argc"] != 3 ) return Usage();
+	
+	$db_server = $_SERVER["argv"][1];
+	if( 3 == $_SERVER["argc"] ) {
+		$using_output_file = 1;
+		$output_file = $_SERVER["argv"][2];
+		$output_file = ExpandMacros($output_file);
+		$fp = fopen( $output_file, "w");
+	} else {
+		$fp = fopen("php://output", "w");
+	}
+
+	echo "db_server: $db_server\n";
+
+	$db_total_cols = 0;
+	$db_total_tables = 0;
+	$db_total_file_size = 0;
+	$now = strftime("%Y-%m-%d %H:%M:%S");
+
+	// connect to server and select the database
+	// could also use something like: $db = sqlsrv_connect( "\\\\$db_server\\pipe\\sql\\query", "ExampleReports", "" );
+	$db = sqlsrv_connect( $db_server , array( "Database" => "master" ));
+	echo "db: $db\n";
+	if( FALSE == $db ) {
+		print "\r\n";
+		print "Unable to make database connection to host: " . $db_server . "\r\n\r\n";
+		fclose($fp);
+		return;
+	}
+
+	$db_list = GetDatabaseNames();
+	if( 1 == $dbg) {
+		print "\r\nDatabases:\r\n";
+		print   "==========";
+		print "\r\n";
+		var_dump($db_list);
+		print "\r\n\r\n";
+	}
+
+	sqlsrv_close( $db );
+
+	foreach( $db_list as $current_db ) {
+		// is there really no way to change databases with the same connection?
+		//$valid = sqlsrv_select_db($current_db, $db);
+		$db = sqlsrv_connect( $db_server, array( "Database" => $current_db) );
+		$tables = GetTableNames();
+		if( 1 == $dbg) {
+			print "\r\n($current_db) tables:\r\n";
+			print   "================================================";
+			print "\r\n";
+			var_dump($db_list);
+			print "\r\n\r\n";
+		}
+		$db_total_tables += sizeof($tables);
+		$max_tbl_len = GetMaxTableNameLength($tables);
+		$db_total_cols += PrintRowCount($now, $current_db, $tables, $max_tbl_len);
+		$db_total_file_size += $db_file_size;
+		sqlsrv_close($db);
+	}
+
+	fwrite( $fp, $line . "\r\n" );
+	fwrite( $fp, "Total number of databases       : " . sizeof($db_list) . "\r\n");
+	fwrite( $fp, "Grand total number of tables    : " . number_format($db_total_tables) . "\r\n");
+	fwrite( $fp, "Grand total number of columns   : " . number_format($db_total_cols) . "\r\n");
+	fwrite( $fp, "\r\n");
+
+	return;
+
+	if( 1 == $using_output_file) {
+		fflush($fp);
+		fclose($fp);
+	}
+}
+
+date_default_timezone_set('America/New_York');
+main();
+
+?>
