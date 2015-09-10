@@ -1,4 +1,8 @@
 
+# copy_atime_mtime.py
+# -John Taylor
+# Aug-13-2015
+
 import os,sys
 
 # copies the src atime/mtime (access/modifiy) attribs to dst
