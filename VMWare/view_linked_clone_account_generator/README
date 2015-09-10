@@ -1,0 +1,4 @@
+This script creates Active Directory entries for a VMWare View
+linked-clone deployment.  It is geared for the use of Kiosk mode.
+
+See the comments in linked_clone_account_generator.ps1 for more details.
