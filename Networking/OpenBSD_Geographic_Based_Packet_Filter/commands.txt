@@ -1,0 +1,11 @@
+
+pfctl -v -t uhc_filter -T show |grep 'In/Block'|grep -v 'ts: 0'
+tcpdump -n -e -ttt -r /var/log/pflog | less
+pfctl -v -t uhc_filter -T show | less
+pfctl -v -t shape -T show | less
+pfctl -vvsTables -t uhc_filter
+
+
+To flush the rules, run this command:  /sbin/pfctl -F all
+To load rules, run this command:       /sbin/pfctl -f /etc/pf.conf ; /sbin/pfctl -e
+To view rules:                         /sbin/pfctl -v -v -t uhc_filter -s rules

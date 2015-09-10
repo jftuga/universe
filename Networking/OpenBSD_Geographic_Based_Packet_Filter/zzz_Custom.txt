@@ -1,0 +1,8 @@
+# Allow ip.ludost.net (geo ip web site)
+!194.12.255.250
+
+# Crazy, weird Microsoft UPnP and Multicast stuff
+# Allow them, so they don't fill up the logs
+!239.255.255.0/24
+!235.80.68.0/24
+

@@ -1,0 +1,11 @@
+#
+# see http://www.iana.org/assignments/ipv4-address-space/ipv4-address-space.txt
+#     search for "AfriNIC"
+# last checked Nov-14-2011
+#
+41.0.0.0/8
+102.0.0.0/8
+105.0.0.0/8
+154.0.0.0/8
+196.0.0.0/8
+197.0.0.0/8
