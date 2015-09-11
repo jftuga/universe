@@ -14,3 +14,9 @@
 - git commit -am "rm"
 - git push
 
+## Revert The Last Change
+
+- git revert HEAD
+- git push
+- see also: https://www.atlassian.com/git/tutorials/undoing-changes/git-revert/
+
