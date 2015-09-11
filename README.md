@@ -1,4 +1,4 @@
-# [u]Universe[/u]
+# Universe
 
 ## Add New Files
 
