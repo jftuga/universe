@@ -1,5 +1,7 @@
 # Universe
 
+[Universe - Manifest](https://rawgit.com/jftuga/universe/master/gh-manifest.html)
+
 ## Add New Files
 
 - cd universe
