@@ -27,8 +27,11 @@ def header(repo_name=""):
 
 ##########################################################################
 
-def footer():
+def footer(fcount):
 	print("</table>")
+	print("<br /><br />")
+	print("file count: %s" % (fcount))
+	print("<br /><br />")
 	print("</body>")
 	print("</html>")
 	print()
@@ -71,10 +74,12 @@ def main():
 		config.read(fname_ini)
 
 	header(repo_name)
+	count = 0
 	for section in sorted(config.sections(), key=lambda s:s.lower()):
 		if "desc" not in config[section]: continue
 		table_add(section,config[section]["desc"])
-	footer()
+		count += 1
+	footer(count)
 
 
 	return 0
