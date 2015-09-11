@@ -1,3 +1,0 @@
-
-# pystat.py
-# -John Taylor
