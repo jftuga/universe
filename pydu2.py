@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 # pydu2.py
 # -John Taylor
