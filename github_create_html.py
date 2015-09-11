@@ -30,7 +30,7 @@ def header(repo_name=""):
 def footer(fcount):
 	print("</table>")
 	print("<br /><br />")
-	print("file count: %s" % (fcount))
+	print("file count: <b>%s</b>" % (fcount))
 	print("<br /><br />")
 	print("</body>")
 	print("</html>")
@@ -44,6 +44,9 @@ def url(fname):
 ##########################################################################
 
 def table_add(fname, desc):
+	if not len(desc):
+		desc="&nbsp;"
+		
 	print("<tr>")
 	print("<td>%s</td>" % (url(fname)))
 	print("<td>%s</td>" % (desc))
