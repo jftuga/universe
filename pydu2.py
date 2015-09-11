@@ -43,8 +43,9 @@ def main():
 	print()
 	print("%s files" % ( fmt(file_count,0) ))
 	print("%s directories" % ( fmt(dir_count,0) ))
-	print("%s bytes" % ( fmt(total,0) ))
+
 	print()
+	print("%s bytes" % ( fmt(total,0) ))
 	if total > 1126:
 		print("%s kilobytes" % ( fmt(total / 1024.0 )))
 	if total > 1153433:
