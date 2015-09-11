@@ -2,7 +2,7 @@
 
 """
 url2red.py
-Aug-30-2015
+Sep-9-2015
 -John Taylor
 
 transform URLs into reddit Markdown by downloading the given URLs and extracting their titles
@@ -30,6 +30,7 @@ def main():
 			print(); print("Error: Unable to find title when using the 'title_re' regular expression."); print()
 			return 1
 
+		url = url.replace(")","\\)")
 		title = matches[0]
 		title=html.unescape(title)
 		#title = title.replace(" - YouTube","")
