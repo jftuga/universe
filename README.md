@@ -1,18 +1,22 @@
-# universe
+# Universe
 
-cd to a directory
+## Add New Files
 
-git add * (or other file mask)
+- cd universe
+- git add * # (or other file mask) (you can also use 'git add --all')
+- git commit -am "initial commit"
+- git push
 
-git commit -am "whatever..."
 
-git push
+## Remove Files
 
+- git rm file.xyz
+- git commit -am "rm"
+- git push
 
-to remove files:
+## Revert The Last Change
 
-git rm file.xyz
+- git revert HEAD
+- git push
+- see also: https://www.atlassian.com/git/tutorials/undoing-changes/git-revert/
 
-git commit -am "rm"
-
-git push
