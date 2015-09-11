@@ -3,7 +3,9 @@
 # -John Taylor
 # Sept-11-2015
 
-import sys,configparser,os.path,os
+# create an INI file containing filename and description
+
+import sys,configparser,os.path,os,re
 from collections import OrderedDict
 
 fname_ini = "gh-__REPO__.ini"
@@ -20,6 +22,9 @@ def safe_print(data):
 
 def get_flist(dname="."):
 
+	ini_re = re.compile("gh-(.*?).ini",re.I)
+	html_re = re.compile("gh-(.*?).html",re.I)
+
 	flist = []
 	start = os.path.join(dname_root,dname)
 	for root, dirs, files in os.walk(start):
@@ -28,6 +33,13 @@ def get_flist(dname="."):
 			full = os.path.join(root,fname)
 			if full.find("%s%s%s" % (os.sep,".git",os.sep)) >= 0: continue
 			if fname.lower().find("readme.md") >= 0: continue
+
+			match = ini_re.findall(fname.lower())
+			if len(match): continue
+
+			match = html_re.findall(fname.lower())
+			if len(match): continue
+
 			slots = full.split(os.sep)
 
 			# for now, just skip subdirectories

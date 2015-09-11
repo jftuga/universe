@@ -3,6 +3,7 @@
 # -John Taylor
 # Sept-11-2015
 
+# Create an HTML file containing a table with filenames and descriptions
 # Example: github_create_html.py > gh-manifest.html
 
 import sys,configparser,os.path
