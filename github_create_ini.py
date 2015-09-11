@@ -43,6 +43,8 @@ def get_flist(dname="."):
 def make_numeric_list(flist):
 	global numeric_flist
 
+	numeric_flist.clear()
+
 	numeric_flist[0] = "-- Quit --"
 
 	n=1
