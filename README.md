@@ -1,18 +1,16 @@
 # universe
 
-cd to a directory
+## Add New Files
 
-git add * (or other file mask)
+cd to the universe directory
 
-git commit -am "whatever..."
+- git add * (or other file mask)
+- git commit -am "whatever..."
+- git push
 
-git push
 
+## Remove Files:
 
-to remove files:
-
-git rm file.xyz
-
-git commit -am "rm"
-
-git push
+- git rm file.xyz
+- git commit -am "rm"
+- git push
