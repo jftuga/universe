@@ -4,7 +4,7 @@
 
 - cd universe
 - git add * # (or other file mask) (you can also use 'git add --all')
-- git commit -am "initial commit"
+- git commit -am "initial commit" # or for one file: git commit filename -m "my comment"
 - git push
 
 
