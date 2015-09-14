@@ -104,7 +104,7 @@ add-content $output ""
 add-content $output ""
 
 
-$emailFrom = "InformationTechnologyDepartment@uhs.uga.edu"
+$emailFrom = "support@example.com"
 #$emailTo = ""
 if( $success -eq $false ) {
 	$subject = "WARNING: Status of services"
@@ -118,8 +118,8 @@ foreach( $line in $temp ) {
 	$body += "$line `r`n"
 }
 
-$smtpServer = "smtp.uhs.uga.edu"
+$smtpServer = "smtp.example.com"
 $smtp = new-object Net.Mail.SmtpClient($smtpServer)
-$smtp.Send($emailFrom, "InformationTechnologyDepartment@uhs.uga.edu",  $subject, $body)
+$smtp.Send($emailFrom, "support@example.com",  $subject, $body)
 
 # end of script

@@ -1,5 +1,7 @@
 # Universe
 
+[Universe - Manifest](https://rawgit.com/jftuga/universe/master/gh-manifest.html)
+
 ## Add New Files
 
 - cd universe
@@ -10,8 +12,8 @@
 
 ## Remove Files
 
-- git rm file.xyz
-- git commit -am "rm"
+- git rm file.xyz # this also deletes the file from the local file system!
+- git commit -am "rm" 
 - git push
 
 ## Revert The Last Change
