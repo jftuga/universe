@@ -10,6 +10,10 @@
 import os, sys, locale
 from os.path import join, getsize
 
+def safe_print(data):
+    # can also use 'replace' instead of 'ignore' for errors= parameter
+    print( str(data).encode(sys.stdout.encoding, errors='ignore').decode(sys.stdout.encoding) )
+
 # convert 112233.4455 into 112,233.45
 def fmt(n,precision=2):
 	tmp = "%." + "%s" % (precision) + "f"
@@ -37,7 +41,7 @@ def main():
 		dir_total += current
 
 		# directory size in kilobytes
-		print("%s\t%s" % (fmt(round(dir_total/1024.0,0),0), root))
+		safe_print("%s\t%s" % (fmt(round(dir_total/1024.0,0),0), root))
 
 	locale.setlocale(locale.LC_ALL, '')
 	print()
