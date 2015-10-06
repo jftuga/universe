@@ -6,7 +6,7 @@
 # Create an HTML file containing a table with filenames and descriptions
 # Example: github_create_html.py > gh-manifest.html
 
-import sys,configparser,os.path
+import sys,configparser,os.path,datetime
 
 fname_ini = "gh-__REPO__.ini"
 
@@ -22,6 +22,8 @@ def header(repo_name=""):
 	print()
 	print("<table border='1' cellpadding='3' cellspacing='3'>")
 	print("<th>File</th>")
+	print("<th>Size</th>")
+	print("<th>Date</th>")
 	print("<th>Description</th>")
 	print()
 
@@ -46,9 +48,17 @@ def url(fname):
 def table_add(fname, desc):
 	if not len(desc):
 		desc="&nbsp;"
-		
+	
+	tmp = os.path.getsize(fname)
+	sz = format(tmp, ',d')
+	mtime = os.path.getmtime(fname)
+	tmp = "%s" % (datetime.datetime.fromtimestamp(mtime))
+	last_modified_date = tmp[:19]
+	
 	print("<tr>")
 	print("<td>%s</td>" % (url(fname)))
+	print("<td>%s</td>" % (sz))
+	print("<td>%s</td>" % (last_modified_date))
 	print("<td>%s</td>" % (desc))
 	print("</tr>")
 	print()
