@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 # github_create_html.py
 # -John Taylor

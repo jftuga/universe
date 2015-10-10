@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 # github_create_ini.py
 # -John Taylor
