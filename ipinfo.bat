@@ -12,6 +12,8 @@ set IP=%1
 
 @echo.
 curl.exe ipinfo.io/%IP%
+@echo.
+@echo.
 
 rem $ curl ipinfo.io
 rem   {
