@@ -5,6 +5,10 @@ dir_compare.py
 Compare files in two (or more) directories
 -John Taylor
 
+license:
+GNU General Public License, version 3 (GPL-3.0)
+http://opensource.org/licenses/GPL-3.0
+
 written with Python 3.4.3 on Windows 7
 tested on Windows 8.1, OS X 10.10.5 and Ubuntu Linux 14.04
 
