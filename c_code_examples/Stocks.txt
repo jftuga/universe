@@ -1,0 +1,8 @@
+DAL|Delta Air Lines Inc|47.45
+SYBS|Sybase Inc|25.50
+DELL|Dell Computer Corp|28.2
+HMC|Honda Motor Co Ltd|76.20
+SNE|Sony Corp|72.70
+PCS|Sprint Corp|31.79
+LU|Lucent Technologies Inc|18.33
+GCI|Gannett Co Inc|63.24
