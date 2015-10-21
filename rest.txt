@@ -1,0 +1,16 @@
+http://www.programmableweb.com/category/all/apis?data_format=21190
+http://www.programmableweb.com/api/geonames
+http://www.programmableweb.com/api/wikipedia
+http://www.programmableweb.com/api/yelp
+http://www.programmableweb.com/api/freebase
+http://www.programmableweb.com/api/geocoder
+http://www.programmableweb.com/api/musicbrainz
+http://www.programmableweb.com/api/yahoo-term-extraction
+http://www.programmableweb.com/api/etsy
+http://www.programmableweb.com/api/openstreetmap
+http://www.programmableweb.com/api/google-places
+http://www.programmableweb.com/api/weatherbug
+http://www.programmableweb.com/api/weather-channel
+http://www.programmableweb.com/api/reddit
+http://www.programmableweb.com/api/govtrack.us
+
