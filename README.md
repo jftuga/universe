@@ -22,3 +22,8 @@
 - git push
 - see also: https://www.atlassian.com/git/tutorials/undoing-changes/git-revert/
 
+## Delete A Branch
+
+- https://help.github.com/articles/viewing-branches-in-your-repository/
+- click on the Branch Tab
+- On the subsequent click the trash can icon next to the branch you wish to remove

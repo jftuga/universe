@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys,platform,sqlite3,os
 
 def py_version_check():
