@@ -46,7 +46,7 @@ def url(fname):
 
 ##########################################################################
 
-def table_add(fname, desc):
+def table_add(fname, desc, bg=False):
 	if not len(desc):
 		desc="&nbsp;"
 	
@@ -55,8 +55,11 @@ def table_add(fname, desc):
 	mtime = os.path.getmtime(fname)
 	tmp = "%s" % (datetime.datetime.fromtimestamp(mtime))
 	last_modified_date = tmp[:19]
-	
-	print("<tr>")
+
+	if bg:
+		print("<tr>")
+	else:
+		print("<tr bgcolor='#D3D3D3'>")
 	print("<td>%s</td>" % (url(fname)))
 	print("<td>%s</td>" % (sz))
 	print("<td>%s</td>" % (last_modified_date))
@@ -91,7 +94,8 @@ def main():
 	count = 0
 	for section in sorted(config.sections(), key=lambda s:s.lower()):
 		if "desc" not in config[section]: continue
-		table_add(section,config[section]["desc"])
+		bg = True if (count%2) else False
+		table_add(section,config[section]["desc"], bg)
 		count += 1
 	footer(count)
 
