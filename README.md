@@ -7,7 +7,7 @@
 - cd universe
 - git add * # (or other file mask) (you can also use 'git add --all')
 - git commit -am "initial commit" # or for one file: git commit filename -m "my comment"
-- git push
+- git push or to push only one branch: git push origin BranchName
 
 
 ## Remove Files
