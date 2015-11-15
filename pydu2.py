@@ -29,14 +29,19 @@ def main():
 	dir_total = 0
 	file_count = 0
 	dir_count = 0
+	err_count = 0
 	for root, dirs, files in os.walk( parameter ):
 		dir_total = 0
 		dir_count += 1
 		current = 0
 		for name in files:
-			fullname = join(root,name)	
-			current += getsize(fullname)
-			file_count += 1
+			fullname = join(root,name)
+			try:
+				current += getsize(fullname)
+				file_count += 1
+			except:
+				safe_print("Error: unable to read: %s" % fullname)
+				err_count += 1
 		total += current
 		dir_total += current
 
@@ -47,6 +52,8 @@ def main():
 	print()
 	print("%s files" % ( fmt(file_count,0) ))
 	print("%s directories" % ( fmt(dir_count,0) ))
+	if err_count:
+		print("%s read errors" % ( fmt(err_count,0) ))
 
 	print()
 	print("%s bytes" % ( fmt(total,0) ))
@@ -56,7 +63,7 @@ def main():
 		print("%s megabytes" % ( fmt(total / 1024 ** 2 )))
 	if total > 1181116006:
 		print("%s gigabytes" % ( fmt(total / 1024.0 ** 3)))
-	print
+	print()
 
 if "__main__" == __name__:
 	main()
