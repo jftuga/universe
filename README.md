@@ -31,3 +31,15 @@
 ## Review Operations
 
 - git log
+- git log --pretty=oneline
+
+## Tagging
+
+- commit & push your change
+- git log --pretty=oneline # to find the commit version checksum
+- git tag -a v1.01 111aabb...bb222 -m "example.py v1.01"
+- git push origin --tags
+- see also: https://git-scm.com/book/en/v2/Git-Basics-Tagging
+
+
+
