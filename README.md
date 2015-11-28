@@ -18,6 +18,8 @@
 
 ## Revert The Last Change
 
+- try this first: https://stackoverflow.com/questions/927358/how-do-you-undo-the-last-commit
+- or...
 - git revert HEAD
 - git push
 - see also: https://www.atlassian.com/git/tutorials/undoing-changes/git-revert/
