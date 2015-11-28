@@ -43,5 +43,7 @@
 - git push origin --tags
 - see also: https://git-scm.com/book/en/v2/Git-Basics-Tagging
 
+## Amend a commit message
 
+- https://stackoverflow.com/questions/179123/edit-an-incorrect-commit-message-in-git
 
