@@ -5,24 +5,26 @@ dir_compare.py
 Compare files in two (or more) directories
 -John Taylor
 
-license:
-GNU General Public License, version 3 (GPL-3.0)
-http://opensource.org/licenses/GPL-3.0
-
 written with Python 3.4.3 on Windows 7
 tested on Windows 8.1, OS X 10.10.5 and Ubuntu Linux 14.04
 
-debug reminder: import pdb; pdb.set_trace()
+debug reminder:
+import pdb; pdb.set_trace()
 
 todo 
 ------
--x to only compare files with a colon-deliemited list of extensions
+-x => only compare files with a colon-deliemited list of extensions
 example: -x .m:.c:.h:.txt
+
+-1 => only show files exclusive to d1
+-2 => only show files exclusive to d2
+
+improve -s (stats) accuracy
 """
 
 # displayed when running dir_compare.py -h
-pgm_version = "4.19"
-pgm_date = "Aug-28-2015 11:46"
+pgm_version = "4.20beta2"
+pgm_date = "Dec-1-2015 13:01"
 
 ##########################################################################################################
 
@@ -31,12 +33,9 @@ import sys,platform
 def py_version_check():
 	min_minor = 3
 
-	msg  = "\n\n"
-	msg += "Error."
-	msg += "\n\n"
+	msg  = "\n\nError.\n\n"
 	msg += "You must be running Python 3.%s or newer for this script to operate.\n" % (min_minor)
-	msg += "You are running version %s" % (platform.python_version())
-	msg +="\n\n"
+	msg += "You are running version %s\n\n" % (platform.python_version())
 
 	major = int(platform.python_version_tuple()[0])
 	minor = int(platform.python_version_tuple()[1])
@@ -60,6 +59,7 @@ py_version_check()
 want_cmp_pgm = True
 str_cmp_pgm = None
 
+# hard-coded:start
 # skip unimportant files - these will not show up in any output, as they are completely skipped
 # these are regular expressions
 want_regexpr_skip_filelist = True
@@ -102,6 +102,7 @@ real_quick_diff_list = (".min.css", ".min.js" )
 # default is 20 MB
 want_file_size_diff_limit = True
 file_size_diff_limit = 20 * ( 1024 * 1024 )
+# hard-coded:end
 
 # verbose: print directory names to STDERR
 # controlled by -v cmd line option
@@ -122,6 +123,7 @@ only_show_same = False
 count_same_files = 0
 count_diff_files = 0
 count_unequal_files = 0
+count_same_contents_files = 0
 count_exclusive_d1 = 0
 count_exclusive_d2 = 0
 skipped_files = []
@@ -501,7 +503,9 @@ def process_directories(d1,d2,diff_only=False,recurse=False):
 		safe_print(outfile=dest)
 
 	if diff_only or not only_show_same:
-		print_differ(meta,d1,d2)
+		same_contents = print_differ(meta,d1,d2)
+		if same_contents:
+			print_same_contents(same_contents)
 	
 	if not diff_only:
 		unequal = print_same(meta,d1,d2)
@@ -509,8 +513,10 @@ def process_directories(d1,d2,diff_only=False,recurse=False):
 			print_unequal( unequal )
 
 		if not only_show_same:
-			print_exclusive_d1(meta,d1,d2)
-			print_exclusive_d2(meta,d1,d2)
+			#print_exclusive_d1(meta,d1,d2)
+			#print_exclusive_d2(meta,d1,d2)
+			print_exclusive(meta,"d1",d1)
+			print_exclusive(meta,"d2",d2)
 
 	if recurse:
 		for i in range(0,4): safe_print()
@@ -654,6 +660,65 @@ def print_unequal(unequal):
 
 ##########################################################################################################
 
+def print_same_contents(same):
+	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories
+	global count_same_contents_files
+	global want_file_size_diff_limit, file_size_diff_limit, want_skip_diff_list, want_ratio_computation, tab_file
+
+	safe_print()
+	safe_print("-" * 135)
+	safe_print(" " * 40 + "files contents are identical, metadata may be different")
+	safe_print("-" * 135)
+	safe_print()
+
+	safe_print("%67s    %10s   %24s" % ("fname", "size", "date"))
+	safe_print("%67s    %10s     %24s" % ("="*33, "="*10, "="*24))
+
+	for grp in same:
+		count_same_contents_files += 1
+		file1 = grp[0]
+		file2 = grp[1]
+		a = os.stat(file1)
+		b = os.stat(file2)
+
+		tmp=time.localtime(a.st_mtime)
+		g = time.asctime(tmp)
+
+		tmp=time.localtime(b.st_mtime)
+		h = time.asctime(tmp)
+
+		safe_print("%67s    %10s     %24s" % (make_ellipses(file1,67), a.st_size, g))
+		safe_print("%67s    %10s     %24s" % (make_ellipses(file2,67), a.st_size, h))
+		safe_print("%67s    %10s     %24s" % ("."*33, "."*9,"."*24))
+		if tab_file:
+			need_ratio = want_ratio_computation
+			if want_file_size_diff_limit:
+				if os.path.getsize(file1) > file_size_diff_limit or os.path.getsize(file2) > file_size_diff_limit:
+					need_ratio = False
+
+			if want_skip_diff_list:
+				if file_in_skip_diff_list(file1,file2):
+					need_ratio = False
+			
+			if need_ratio:
+				ratio = 100.0
+			else:
+				ratio = 0.0
+
+			dirname1 = os.path.dirname(file1)
+			dirname2 = os.path.dirname(file2)
+
+			basename1 = os.path.basename(file1)
+			basename2 = os.path.basename(file2)
+			basename = basename1 if basename1 == basename2 else "????"
+
+			save_tab_file("same_content",dirname1,dirname2,basename,ratio,a.st_size,b.st_size,g,h)
+
+	safe_print()
+
+
+##########################################################################################################
+
 def print_differ(meta,d1,d2):
 	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories, want_ratio_computation, tab_file
 
@@ -668,7 +733,10 @@ def print_differ(meta,d1,d2):
 		safe_print()
 	
 	safe_print("-" * 135)
-	safe_print(" " * 40 + "files that differ [%s] (star denotes newer or larger file; higher ratio denotes more similarity)" % len(meta.diff_files))
+	if shallow_cmp:
+		safe_print(" " * 40 + "files that differ [%s] (star denotes newer or larger file; higher ratio denotes more similarity)" % len(meta.diff_files))
+	else:
+		safe_print(" " * 40 + "files that differ (star denotes newer or larger file; higher ratio denotes more similarity)")
 	safe_print("-" * 135)
 	safe_print()
 
@@ -676,6 +744,7 @@ def print_differ(meta,d1,d2):
 	safe_print("%67s    %10s     %10s       %24s     %24s    %6s" % ("="*33, "="*10, "="*10, "="*24, "="*24, "="*6))
 
 	cmp_results = []
+	actually_same_contents = []
 	files_processed = 0
 	for f in sorted(meta.diff_files):
 		if want_regexpr_skip_filelist and within_regexpr_skip_filelist(f): 
@@ -741,6 +810,17 @@ def print_differ(meta,d1,d2):
 			percent_sign="%"
 
 		files_processed += 1
+		#import pdb; pdb.set_trace()
+
+		if not shallow_cmp:
+			f1 = "%s%s%s" % (d1,os.sep,f)
+			f2 = "%s%s%s" % (d2,os.sep,f)
+			identical = filecmp.cmp(f1,f2,shallow=False)
+			#identical = DC_cmp(f1,f2,shallow=False)
+			if identical:
+				actually_same_contents.append( (f1,f2))
+				continue
+
 		safe_print("%67s    %10s%s    %10s%s      %24s%s    %24s%s   %4.2f%s" % (make_ellipses(f,67), a.st_size, x, b.st_size, y,  g,j,  h,k, ratio,percent_sign))
 		if tab_file:
 			save_tab_file("different",d1,d2,f,ratio,a.st_size,b.st_size,g,h)
@@ -810,7 +890,7 @@ def print_differ(meta,d1,d2):
 		for entry in cmp_results:
 			safe_print(entry)
 
-	return files_processed
+	return actually_same_contents if len(actually_same_contents) else False
 
 ##########################################################################################################
 
@@ -877,71 +957,44 @@ def print_same(meta,d1,d2):
 
 ##########################################################################################################
 
-def print_exclusive_d1(meta,d1,d2):
+def print_exclusive(meta,dname,d0):
 	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories, tab_file
 
-	if not len(meta.left_only):
+	metadir = meta.left_only if "d1" == dname else meta.right_only
+
+	if not len(metadir):
 		safe_print()
 		safe_print("-" * 135)
-		safe_print(" " * 30 + "there are no files exclusively in: %s" % (d1))
+		safe_print(" " * 30 + "there are no files exclusively in: %s" % (d0))
 		safe_print("-" * 135)
 		return	
 
 	for i in range(0,4): safe_print(outfile=sys.stdout)
 	safe_print("-" * 135)
-	safe_print(" " * 30 + "files exclusively in [%s]: %s" % (len(meta.left_only),d1))
+	safe_print(" " * 30 + "files exclusively in [%s]: %s" % (len(metadir),d0))
 	safe_print("-" * 135)
 	safe_print("%67s    %10s   %24s" % ("fname", "size", "date"))
 	safe_print("%67s    %10s     %24s" % ("="*33, "="*10, "="*24))
-	for f in sorted(meta.left_only):
+	for f in sorted(metadir):
 		if want_regexpr_skip_filelist and want_global_skip_filelist and within_regexpr_skip_filelist(f): 
-			skipped_files.append( "%s%s%s" % (d1,os.sep,f) )
+			skipped_files.append( "%s%s%s" % (d0,os.sep,f) )
 			continue
-		count_exclusive_d1 += 1
+		if "d1" == dname:
+			count_exclusive_d1 += 1
+		else:
+			count_exclusive_d2 += 1
 
-		a = os.stat("%s%s%s" % (d1,os.sep,f))
+		a = os.stat("%s%s%s" % (d0,os.sep,f))
 		tmp=time.localtime(a.st_mtime)
 		q = time.asctime(tmp)
 
 		safe_print("%67s    %10s     %24s" % (make_ellipses(f,67), a.st_size, q))
 		if tab_file:
-			save_tab_file("exclusive_d1",d1,"",f,"",a.st_size,"",q,"")
-	safe_print()
-	safe_print()
-
-##########################################################################################################
-
-def print_exclusive_d2(meta,d1,d2):	
-	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories, tab_file
-
-	if not len(meta.right_only):
-		safe_print()
-		safe_print("-" * 135)
-		safe_print(" " * 30 + "there are no files exclusively in: %s" % (d2))
-		safe_print("-" * 135)
-		return	
-
-	for i in range(0,4): safe_print(outfile=sys.stdout)
-	safe_print("-" * 135)
-	safe_print(" " * 30 + "files exclusively in [%s]: %s" % (len(meta.right_only),d2))
-	safe_print("-" * 135)
-	safe_print("%67s    %10s   %24s" % ("fname", "size", "date"))
-	safe_print("%67s    %10s     %24s" % ("="*33, "="*10, "="*24))
-	for f in sorted(meta.right_only):
-		if want_regexpr_skip_filelist and want_global_skip_filelist and within_regexpr_skip_filelist(f): 
-			skipped_files.append( "%s%s%s" % (d1,os.sep,f) )
-			continue
-		count_exclusive_d2 += 1
-
-		b = os.stat("%s%s%s" % (d2,os.sep,f))
-		tmp=time.localtime(b.st_mtime)
-		q = time.asctime(tmp)
-
-		safe_print("%67s    %10s     %24s" % (make_ellipses(f,67), b.st_size, q))
-		if tab_file:
-			save_tab_file("exclusive_d2","",d2,f,"","",b.st_size,"",q)
-	safe_print()
-	safe_print()
+			if "d1" == dname:
+				save_tab_file("exclusive_d1",d0,"",f,"",a.st_size,"",q,"")
+			else:
+				save_tab_file("exclusive_d2",d0,"",f,"",a.st_size,"",q,"")
+	safe_print(); safe_print()
 
 ##########################################################################################################
 
@@ -1020,6 +1073,7 @@ def compute_ratio(file1,file2):
 
 def print_totals(detailed=False, identical=False):
 	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories, elapsed_ratio_time
+	global count_same_contents_files
 
 	dest = sys.stderr
 	
@@ -1033,6 +1087,7 @@ def print_totals(detailed=False, identical=False):
 	safe_print("%40s %s" % ("%s:" % (desc), (count_same_files-count_unequal_files)), outfile=dest)
 	safe_print("%40s %s" % ("different files:", count_diff_files), outfile=dest)
 	safe_print("%40s %s" % ("same metadata, different data:", count_unequal_files), outfile=dest)
+	safe_print("%40s %s" % ("same contents, possibly different metadata:", count_same_contents_files), outfile=dest)
 	safe_print("%40s %s" % ("exclusive to directory 1:", count_exclusive_d1), outfile=dest)
 	safe_print("%40s %s" % ("exclusive to directory 2:", count_exclusive_d2), outfile=dest)
 	safe_print("%40s %s" % ("skipped files (via reg expr):", len(skipped_files)), outfile=dest)
@@ -1122,18 +1177,37 @@ def save_tab_file(comparison, dname1, dname2, fname, ratio, fsize1, fsize2, date
 
 ##########################################################################################################
 
+def print_hard_coded(fname):
+	hard_re = re.compile("# hard-coded:start(.*?)# hard-coded:end",re.S|re.M)
+	with open(fname,mode="r",encoding="latin-1") as fp: data=fp.read()
+
+	match = hard_re.findall(data)
+	if not match: return
+
+	for line in match[:-1]:
+		safe_print(line)
+
+##########################################################################################################
+
 def main():
 	global want_verbose_dir_print, shallow_cmp, str_cmp_pgm, only_show_same, html_output_dir, want_ratio_computation
 
 	parser = argparse.ArgumentParser(description="Compare files in two directories", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("dname1", help="first directory to compare")
 	parser.add_argument("dname2", help="second directory to compare")
-	parser.add_argument("-d", "--diffonly", help="only show files that are different", action="store_true")
-	group = parser.add_mutually_exclusive_group()
-	group.add_argument("-l", "--listdirs", help="recusively list directories to compare", action="store_true")
-	group.add_argument("-r", "--recurse", help="recusively view file differences in directories", action="store_true")
+	
+	group1 = parser.add_mutually_exclusive_group()
+	group1.add_argument("-l", "--listdirs", help="recusively list directories to compare", action="store_true")
+	group1.add_argument("-r", "--recurse", help="recusively view file differences in directories", action="store_true")
+	group1.add_argument("-o", "--options", help="print hard-coded options & values", action="store_true")
+	
+	group2 = parser.add_mutually_exclusive_group()
+	group2.add_argument("-d", "--diffonly", help="only show files that are different", action="store_true")
+	group2.add_argument("-i", "--identical", help="only show files that have the same metadata",action="store_true")
+	group2.add_argument("-1", "--one", help="only show files exclusive to dname1",action="store_true")
+	group2.add_argument("-2", "--two", help="only show files exclusive to dname2",action="store_true")
+	
 	parser.add_argument("-c", "--contents", help="compare contents of the files, not just metadata", action="store_true")
-	parser.add_argument("-i", "--identical", help="only show files that have the same metadata",action="store_true")
 	parser.add_argument("-p", "--pgm", help="use PGM as your comparision program")
 	parser.add_argument("-H", "--hdir", help="output differences to HTML files using HDIR directory")
 	parser.add_argument("-n", "--noratio", help="do not compute difference ratio for similar files",action="store_true")
@@ -1143,6 +1217,9 @@ def main():
 	parser.add_argument("-S", "--morestats", help="print even more detailed statistical totals to STDERR", action="store_true")
 	
 	args = parser.parse_args()
+
+	if args.options:
+		return print_hard_coded(sys.argv[0])
 
 	if args.verbose:
 		want_verbose_dir_print = True
