@@ -12,11 +12,11 @@ import argparse
 import concurrent.futures
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Address,ip_network
+from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.00"
-pgm_date = "Dec-8-2015 16:36"
+pgm_version = "1.01"
+pgm_date = "Dec-8-2015 16:44"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -46,7 +46,7 @@ def scan_one_host(ip,ports):
 			for future in concurrent.futures.as_completed(alpha):
 				pass
 	else:
-		# comma separated list of ports, includes just one port
+		# comma separated list of ports, can also include a single port
 		port_list = ports.split(",")
 		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
 			beta = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
@@ -114,9 +114,8 @@ def create_skipped_port_list(ports):
 		end = int(end)
 		skipped_port_list = list(range(start,end+1))
 	else:
-		# comma separated list of ports, includes just one port
+		# comma separated list of ports, can also include a single port
 		skipped_port_list = ports.split(",")
-
 
 #############################################################################################
 
@@ -125,7 +124,7 @@ def main():
 	global max_workers, connect_timeout
 	global skipped_hosts, skipped_ports
 
-	parser = argparse.ArgumentParser(description="Network port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
+	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("netblock", help="example: 192.168.1.0/24")
 	parser.add_argument("-x", "--skipnetblock", help="skip a sub-netblock, example: 192.168.1.96/28")
 	parser.add_argument("-X", "--skipports", help="exclude a subset of ports, example: example: 135-139")
