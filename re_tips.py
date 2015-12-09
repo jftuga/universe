@@ -6,6 +6,12 @@
 
 import re
 
+##################################################################################################
+### Tip 1
+##################################################################################################
+
+print() ; print("="*77); print()
+
 # https://news.ycombinator.com/item?id=10282121
 # http://www.rexegg.com/regex-best-trick.html
 # match all the content between certain delimiters (in this case double quotes)
@@ -61,3 +67,22 @@ splits = replaced.split('Superman')
 print("\n" + "*** Splits ***")
 for split in splits:
 	    print (split)
+
+##################################################################################################
+### Tip 2
+##################################################################################################
+
+print() ; print("="*77); print()
+
+# How can I check if a string contains ANY letters from the alphabet?
+# https://stackoverflow.com/questions/9072844/how-can-i-check-if-a-string-contains-any-letters-from-the-alphabet
+
+string_1 = "(555).555-5555"
+print ( re.search('[a-zA-Z]', string_1) )
+string_2 = "(555) 555 - 5555 ext. 5555"
+print ( re.search('[a-zA-Z]', string_2) )
+
+# even better for this particular scenario:
+print ( any(c.isalpha() for c in string_1) )
+print ( any(c.isalpha() for c in string_2) )
+
