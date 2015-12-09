@@ -30,6 +30,7 @@ hosts_scanned = 0
 skipped_hosts = 0
 skipped_ports = 0
 opened_ports = 0
+ports_scanned = 0
 skipped_port_list = []
 
 default_port_list = "20,21,22,25,47,53,80,110,137,138,139,143,161,443,445,465,587,843,873,990,993,995,1000,1167,1723,2000,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,3000,3306,3389,4000,5000,5432,5433,6000,7000,8000,8080,8443,8880,8888,9000,9001,9998,27017,27018,27019,28017"
@@ -65,7 +66,7 @@ def scan_one_host(ip,ports):
 #############################################################################################
 
 def scan_one_port(ip,port):
-	global args, fp_output, active_hosts, opened_ports
+	global args, fp_output, active_hosts, opened_ports, ports_scanned
 	global max_workers, connect_timeout, skipped_port_list, skipped_ports
 	port = int(port)
 
@@ -78,6 +79,7 @@ def scan_one_port(ip,port):
 		return
 
 	try: 
+		ports_scanned += 1
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.settimeout(connect_timeout)
 		result = sock.connect_ex((ip, port))
@@ -192,6 +194,7 @@ def main():
 		print("Skipped Hosts: ", skipped_hosts)
 		print("Opened Ports : ", opened_ports)
 		print("Skipped Ports: ", skipped_ports)
+		print("Ports Scanned: ", ports_scanned)
 		print()
 
 	if args.output:
