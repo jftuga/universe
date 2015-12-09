@@ -15,8 +15,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.02"
-pgm_date = "Dec-8-2015 21:05"
+pgm_version = "1.03"
+pgm_date = "Dec-8-2015 22:09"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -136,7 +136,7 @@ def main():
 	global skipped_hosts, skipped_ports, hosts_scanned
 
 	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
-	parser.add_argument("netblock", help="example: 192.168.1.0/24")
+	parser.add_argument("target", help="examples: 192.168.1.0/24 192.168.1.100 www.example.com")
 	parser.add_argument("-x", "--skipnetblock", help="skip a sub-netblock, example: 192.168.1.96/28")
 	parser.add_argument("-X", "--skipports", help="exclude a subset of ports, example: example: 135-139")
 	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, example: 22,80,443,445,515  example: 80-515")
@@ -162,14 +162,22 @@ def main():
 	port_list = args.ports if args.ports else default_port_list
 	ip_skiplist = ip_network(args.skipnetblock) if args.skipnetblock else []
 
-	tmp = ip_network(args.netblock)
-	hosts = list(tmp.hosts())
-	if args.shufflehosts:
-		shuffle(hosts)
-	
-	if not len(hosts):
-		tmp = args.netblock.replace("/32","")
-		hosts = (tmp,)
+	if any(c.isalpha() for c in args.target):
+		try:
+			ip = socket.gethostbyname(args.target)
+			hosts = (ip,)
+		except:
+			print("Unable to resolve hostname:", args.target)
+			return
+	else:
+		tmp = ip_network(args.target)
+		hosts = list(tmp.hosts())
+		if args.shufflehosts:
+			shuffle(hosts)
+		
+		if not len(hosts):
+			tmp = args.target.replace("/32","")
+			hosts = (tmp,)
 	
 	t1 = datetime.now()
 	for tmp in hosts:
