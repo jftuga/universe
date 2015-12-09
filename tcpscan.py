@@ -15,8 +15,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.03"
-pgm_date = "Dec-8-2015 22:09"
+pgm_version = "1.04"
+pgm_date = "Dec-8-2015 22:18"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -126,7 +126,7 @@ def create_skipped_port_list(ports):
 		skipped_port_list = list(range(start,end+1))
 	else:
 		# comma separated list of ports, can also include a single port
-		skipped_port_list = ports.split(",")
+		skipped_port_list = [int(n) for n in ports.split(",")]
 
 #############################################################################################
 
@@ -175,7 +175,7 @@ def main():
 		if args.shufflehosts:
 			shuffle(hosts)
 		
-		if not len(hosts):
+		if not len(hosts): # a single ip-address was given on cmd-line
 			tmp = args.target.replace("/32","")
 			hosts = (tmp,)
 	
@@ -212,3 +212,4 @@ def main():
 
 if "__main__" == __name__:
 	main()
+
