@@ -15,8 +15,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.01"
-pgm_date = "Dec-8-2015 16:44"
+pgm_version = "1.02"
+pgm_date = "Dec-8-2015 21:05"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -26,28 +26,37 @@ connect_timeout = 0.07
 
 # initialize other globals...
 active_hosts = defaultdict(list)
+hosts_scanned = 0
 skipped_hosts = 0
 skipped_ports = 0
 opened_ports = 0
 skipped_port_list = []
 
+default_port_list = "20,21,22,25,47,53,80,110,137,138,139,143,161,443,445,465,587,843,873,990,993,995,1000,1167,1723,2000,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,3000,3306,3389,4000,5000,5432,5433,6000,7000,8000,8080,8443,8880,8888,9000,9001,9998,27017,27018,27019,28017"
+
 #############################################################################################
 
 def scan_one_host(ip,ports):
-	global max_workers, connect_timeout
-	
+	global args,max_workers, connect_timeout, hosts_scanned
+
+	hosts_scanned += 1
 	if ports.find("-") > 0 and ports.find(",") == -1:
 		# hypen delimited range of ports
 		start, end = ports.split("-")
 		start = int(start)
 		end = int(end)
+		
+		port_list = list(range(start,end+1))
+		if args.shuffleports: shuffle( port_list )
 		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-			alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in range(start,end+1)}
+			alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
 			for future in concurrent.futures.as_completed(alpha):
 				pass
 	else:
 		# comma separated list of ports, can also include a single port
 		port_list = ports.split(",")
+		if args.shuffleports:
+				shuffle(port_list)
 		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
 			beta = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
 			for future in concurrent.futures.as_completed(beta):
@@ -120,9 +129,9 @@ def create_skipped_port_list(ports):
 #############################################################################################
 
 def main():
-	global args, fp_output
+	global args, fp_output, default_port_list
 	global max_workers, connect_timeout
-	global skipped_hosts, skipped_ports
+	global skipped_hosts, skipped_ports, hosts_scanned
 
 	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("netblock", help="example: 192.168.1.0/24")
@@ -131,10 +140,11 @@ def main():
 	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, example: 22,80,443,445,515  example: 80-515")
 	parser.add_argument("-T", "--threads", help="number of concurrent threads, example: 25")
 	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, example: 0.2")
-	parser.add_argument("-s", "--shuffle", help="randomize the order IPs are scanned", action="store_true")
+	parser.add_argument("-s", "--shufflehosts", help="randomize the order IPs are scanned", action="store_true")
+	parser.add_argument("-S", "--shuffleports", help="randomize the order ports are scanned", action="store_true")
 	parser.add_argument("-c", "--closed", help="output ports that are closed", action="store_true")
 	parser.add_argument("-o", "--output", help="output to CSV file")
-	parser.add_argument("-v", "--verbose", help="output more statistics", action="store_true")
+	parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
 
 	args = parser.parse_args()
 
@@ -146,14 +156,19 @@ def main():
 		fp_output = open(args.output,mode="w",encoding="latin-1")
 	if args.skipports:
 		create_skipped_port_list(args.skipports)
-
+	
+	port_list = args.ports if args.ports else default_port_list
 	ip_skiplist = ip_network(args.skipnetblock) if args.skipnetblock else []
 
 	tmp = ip_network(args.netblock)
 	hosts = list(tmp.hosts())
-	if args.shuffle:
+	if args.shufflehosts:
 		shuffle(hosts)
-
+	
+	if not len(hosts):
+		tmp = args.netblock.replace("/32","")
+		hosts = (tmp,)
+	
 	t1 = datetime.now()
 	for tmp in hosts:
 		my_ip = "%s" % (tmp)
@@ -164,7 +179,7 @@ def main():
 				if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
 			skipped_hosts += 1
 			continue
-		scan_one_host( "%s" % (my_ip), args.ports )
+		scan_one_host( "%s" % (my_ip), port_list )
 
 	t2 = datetime.now()
 	total =	t2 - t1
@@ -173,6 +188,7 @@ def main():
 		print()
 		print("Scan Time    : ", total)
 		print("Active Hosts : ", len(active_hosts))
+		print("Hosts Scanned: ", hosts_scanned)
 		print("Skipped Hosts: ", skipped_hosts)
 		print("Opened Ports : ", opened_ports)
 		print("Skipped Ports: ", skipped_ports)
