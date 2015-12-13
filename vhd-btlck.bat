@@ -40,7 +40,7 @@ if "%OP%"=="mount" (
 
 :BITLOCK
 	manage-bde.exe -unlock %VHDDRIVE% -password
-	if not exist p:\nul goto BITLOCK
+	if not exist %VHDDRIVE%:\nul goto BITLOCK
 	goto END
 )
 
