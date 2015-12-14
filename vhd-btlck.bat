@@ -8,6 +8,29 @@ rem
 rem Mount and unmount a bitlocker encrypted VHD file as a drive letter
 rem Modify VDISK and VHDDRIVE accordingly
 
+rem
+rem How to create a 4 GB VHD
+rem ------------------------
+rem create vdisk file="C:\example.vhd" maximum=4096
+rem attach vdisk 
+rem create partition primary 
+rem assign letter=v
+rem 
+rem then use one of the following...
+rem
+rem format label="Example VHD"
+rem format label="Example VHD" QUICK
+rem format fs=FAT32 label="Example VHD" QUICK
+rem
+
+rem
+rem How to encrypt a VHD
+rem --------------------
+rem manage-bde.exe -protectors -add -pw v:
+rem
+
+rem -----------------------------------------------------------------
+
 set VDISK="C:\example.vhd"
 set VHDDRIVE=v:
 set TMPFILE=%TEMP%\dpart.%RANDOM%.%RANDOM%.tmp 
