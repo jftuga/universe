@@ -13,4 +13,4 @@ http://www.programmableweb.com/api/weatherbug
 http://www.programmableweb.com/api/weather-channel
 http://www.programmableweb.com/api/reddit
 http://www.programmableweb.com/api/govtrack.us
-
+https://www.reddit.com/r/webdev/comments/3wrswc/what_are_some_fun_apis_to_play_with/
