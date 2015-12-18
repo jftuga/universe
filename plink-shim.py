@@ -36,7 +36,6 @@ plink-shim.py -s ubuntu df ^| awk '{print $2}' ^| grep -v 1K-blocks
 running commands for a HP Procurve switch, using plink.exe:
 plink.exe -ssh -pw xxx procurve1 < cmds.txt > output.txt
 (plink.exe -m file does not seem to work for these switches)
-
 """
 
 #############################################################################
