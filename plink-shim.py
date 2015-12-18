@@ -11,7 +11,7 @@ Instructions
 ------------
 1) create a new PuTTY SSH session entry
 
-2) configureda PuTTY entry to use public key authentication with PuttyGen
+2) configure a PuTTY entry to use public key authentication with PuttyGen
         see also: http://the.earth.li/~sgtatham/putty/0.66/htmldoc/Chapter8.html
         With PuttyGen, copy the "Public key for parting into OpenSSH authorized_keys file" to the clipboard
         On Linux: Paste & append to ~/.ssh/authorized_keys and then chmod 600 ~/.ssh/authorized_keys
