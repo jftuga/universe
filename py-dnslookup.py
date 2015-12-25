@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 import sys, socket, re
 
 def resolve(ip):
