@@ -24,6 +24,9 @@ max_workers = 50
 # default connect timeout when checking a port, changed with -t
 connect_timeout = 0.07
 
+# how long to wait in between connection attempts
+delay = 0
+
 # initialize other globals...
 active_hosts = defaultdict(list)
 hosts_scanned = 0
@@ -33,7 +36,7 @@ opened_ports = 0
 ports_scanned = 0
 skipped_port_list = []
 
-default_port_list = "20,21,22,25,47,53,80,110,137,138,139,143,161,443,445,465,587,843,873,990,993,995,1000,1167,1723,2000,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,3000,3306,3389,4000,4001,4172,5000,5432,5433,6000,7000,8000,8080,8443,8880,8888,9000,9001,9998,27017,27018,27019,28017,32111"
+default_port_list = "20,21,22,25,47,53,80,110,137,138,139,143,161,443,445,465,587,843,873,990,993,995,1000,1167,1723,2000,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,3000,3306,3389,4000,5000,5432,5433,6000,7000,8000,8080,8443,8880,8888,9000,9001,9998,27017,27018,27019,28017,32400"
 
 #############################################################################################
 
@@ -56,8 +59,7 @@ def scan_one_host(ip,ports):
 	else:
 		# comma separated list of ports, can also include a single port
 		port_list = ports.split(",")
-		if args.shuffleports:
-				shuffle(port_list)
+		if args.shuffleports: shuffle(port_list)
 		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
 			beta = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
 			for future in concurrent.futures.as_completed(beta):
@@ -78,6 +80,9 @@ def scan_one_port(ip,port):
 		skipped_ports += 1
 		return
 
+	if args.delay:
+		print("j:", float(args.delay))
+		time.sleep(float(args.delay))
 	try: 
 		ports_scanned += 1
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -142,6 +147,8 @@ def main():
 	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, example: 22,80,443,445,515  example: 80-515")
 	parser.add_argument("-T", "--threads", help="number of concurrent threads, example: 25")
 	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, example: 0.2")
+	# beta...
+	# parser.add_argument("-d", "--delay", help="pause in between connection attempts, example: 0.33")
 	parser.add_argument("-s", "--shufflehosts", help="randomize the order IPs are scanned", action="store_true")
 	parser.add_argument("-S", "--shuffleports", help="randomize the order ports are scanned", action="store_true")
 	parser.add_argument("-c", "--closed", help="output ports that are closed", action="store_true")
