@@ -7,6 +7,7 @@ tcpscan.py
 A simple, multi-threaded TCP port scanner
 """
 
+import sys
 import socket
 import argparse
 import concurrent.futures
@@ -15,17 +16,14 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.04"
-pgm_date = "Dec-8-2015 22:18"
+pgm_version = "1.05"
+pgm_date = "Jan-3-2016 06:48"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
 
 # default connect timeout when checking a port, changed with -t
 connect_timeout = 0.07
-
-# how long to wait in between connection attempts
-delay = 0
 
 # initialize other globals...
 active_hosts = defaultdict(list)
@@ -49,6 +47,9 @@ def scan_one_host(ip,ports):
 		start, end = ports.split("-")
 		start = int(start)
 		end = int(end)
+		if end < start:
+			print();print("Error: For -p option, ending port is less that starting port");print()
+			sys.exit(1)
 		
 		port_list = list(range(start,end+1))
 		if args.shuffleports: shuffle( port_list )
@@ -80,9 +81,6 @@ def scan_one_port(ip,port):
 		skipped_ports += 1
 		return
 
-	if args.delay:
-		print("j:", float(args.delay))
-		time.sleep(float(args.delay))
 	try: 
 		ports_scanned += 1
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -128,6 +126,9 @@ def create_skipped_port_list(ports):
 		start, end = ports.split("-")
 		start = int(start)
 		end = int(end)
+		if end < start:
+			print();print("Error: For -X option, ending port is less that starting port");print()
+			sys.exit(1)
 		skipped_port_list = list(range(start,end+1))
 	else:
 		# comma separated list of ports, can also include a single port
@@ -147,8 +148,6 @@ def main():
 	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, example: 22,80,443,445,515  example: 80-515")
 	parser.add_argument("-T", "--threads", help="number of concurrent threads, example: 25")
 	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, example: 0.2")
-	# beta...
-	# parser.add_argument("-d", "--delay", help="pause in between connection attempts, example: 0.33")
 	parser.add_argument("-s", "--shufflehosts", help="randomize the order IPs are scanned", action="store_true")
 	parser.add_argument("-S", "--shuffleports", help="randomize the order ports are scanned", action="store_true")
 	parser.add_argument("-c", "--closed", help="output ports that are closed", action="store_true")
@@ -177,7 +176,12 @@ def main():
 			print("Unable to resolve hostname:", args.target)
 			return
 	else:
-		tmp = ip_network(args.target)
+		try:
+			tmp = ip_network(args.target)
+		except ValueError as err:
+			print("Error:", err)
+			sys.exit(1)
+
 		hosts = list(tmp.hosts())
 		if args.shufflehosts:
 			shuffle(hosts)
@@ -211,6 +215,12 @@ def main():
 		print("Skipped Ports: ", skipped_ports)
 		print("Ports Scanned: ", ports_scanned)
 		print()
+	else:
+		if not opened_ports:
+			print()
+			print("Opened Ports : ", opened_ports)
+			print("Ports Scanned: ", ports_scanned)
+			print()
 
 	if args.output:
 		fp_output.close()
