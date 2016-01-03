@@ -16,8 +16,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.05"
-pgm_date = "Jan-3-2016 06:48"
+pgm_version = "1.06"
+pgm_date = "Jan-3-2016 06:58"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -49,22 +49,17 @@ def scan_one_host(ip,ports):
 		end = int(end)
 		if end < start:
 			print();print("Error: For -p option, ending port is less that starting port");print()
-			sys.exit(1)
-		
+			sys.exit(1)		
 		port_list = list(range(start,end+1))
-		if args.shuffleports: shuffle( port_list )
-		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-			alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
-			for future in concurrent.futures.as_completed(alpha):
-				pass
 	else:
 		# comma separated list of ports, can also include a single port
 		port_list = ports.split(",")
-		if args.shuffleports: shuffle(port_list)
-		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-			beta = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
-			for future in concurrent.futures.as_completed(beta):
-				pass
+		
+	if args.shuffleports: shuffle(port_list)
+	with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+		alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
+		for future in concurrent.futures.as_completed(alpha):
+			pass
 
 #############################################################################################
 
@@ -79,7 +74,7 @@ def scan_one_port(ip,port):
 			print(line)
 			if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
 		skipped_ports += 1
-		return
+		return False
 
 	try: 
 		ports_scanned += 1
@@ -174,7 +169,7 @@ def main():
 			hosts = (ip,)
 		except:
 			print("Unable to resolve hostname:", args.target)
-			return
+			sys.exit(1)
 	else:
 		try:
 			tmp = ip_network(args.target)
