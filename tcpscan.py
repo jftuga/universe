@@ -16,8 +16,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.06"
-pgm_date = "Jan-3-2016 06:58"
+pgm_version = "1.07"
+pgm_date = "Jan-3-2016 08:30"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -214,6 +214,7 @@ def main():
 		if not opened_ports:
 			print()
 			print("Opened Ports : ", opened_ports)
+			print("Hosts Scanned: ", hosts_scanned)
 			print("Ports Scanned: ", ports_scanned)
 			print()
 
