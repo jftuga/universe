@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 # pystat.py
 # -John Taylor

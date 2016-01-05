@@ -7,6 +7,7 @@ tcpscan.py
 A simple, multi-threaded TCP port scanner
 """
 
+import sys
 import socket
 import argparse
 import concurrent.futures
@@ -15,8 +16,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.04"
-pgm_date = "Dec-8-2015 22:18"
+pgm_version = "1.07"
+pgm_date = "Jan-3-2016 08:30"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -33,7 +34,7 @@ opened_ports = 0
 ports_scanned = 0
 skipped_port_list = []
 
-default_port_list = "20,21,22,25,47,53,80,110,137,138,139,143,161,443,445,465,587,843,873,990,993,995,1000,1167,1723,2000,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,3000,3306,3389,4000,4001,4172,5000,5432,5433,6000,7000,8000,8080,8443,8880,8888,9000,9001,9998,27017,27018,27019,28017,32111"
+default_port_list = "20,21,22,23,25,47,53,69,80,110,113,123,135,137,138,139,143,161,179,194,201,311,389,427,443,445,465,500,513,514,515,530,548,554,563,587,593,601,631,636,660,674,691,694,749,751,843,873,901,902,903,987,990,992,993,994,995,1000,1167,1234,1433,1434,1521,1528,1723,1812,1813,2000,2049,2375,2376,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,2483,2484,2638,3000,3260,3283,3306,3389,3478,3690,4000,5000,5432,5433,6000,6667,7000,8000,8080,8443,8880,8888,9000,9001,9418,9998,27017,27018,27019,28017,32400"
 
 #############################################################################################
 
@@ -46,22 +47,19 @@ def scan_one_host(ip,ports):
 		start, end = ports.split("-")
 		start = int(start)
 		end = int(end)
-		
+		if end < start:
+			print();print("Error: For -p option, ending port is less that starting port");print()
+			sys.exit(1)		
 		port_list = list(range(start,end+1))
-		if args.shuffleports: shuffle( port_list )
-		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-			alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
-			for future in concurrent.futures.as_completed(alpha):
-				pass
 	else:
 		# comma separated list of ports, can also include a single port
 		port_list = ports.split(",")
-		if args.shuffleports:
-				shuffle(port_list)
-		with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-			beta = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
-			for future in concurrent.futures.as_completed(beta):
-				pass
+		
+	if args.shuffleports: shuffle(port_list)
+	with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+		alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
+		for future in concurrent.futures.as_completed(alpha):
+			pass
 
 #############################################################################################
 
@@ -76,7 +74,7 @@ def scan_one_port(ip,port):
 			print(line)
 			if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
 		skipped_ports += 1
-		return
+		return False
 
 	try: 
 		ports_scanned += 1
@@ -123,6 +121,9 @@ def create_skipped_port_list(ports):
 		start, end = ports.split("-")
 		start = int(start)
 		end = int(end)
+		if end < start:
+			print();print("Error: For -X option, ending port is less that starting port");print()
+			sys.exit(1)
 		skipped_port_list = list(range(start,end+1))
 	else:
 		# comma separated list of ports, can also include a single port
@@ -168,9 +169,14 @@ def main():
 			hosts = (ip,)
 		except:
 			print("Unable to resolve hostname:", args.target)
-			return
+			sys.exit(1)
 	else:
-		tmp = ip_network(args.target)
+		try:
+			tmp = ip_network(args.target)
+		except ValueError as err:
+			print("Error:", err)
+			sys.exit(1)
+
 		hosts = list(tmp.hosts())
 		if args.shufflehosts:
 			shuffle(hosts)
@@ -204,6 +210,13 @@ def main():
 		print("Skipped Ports: ", skipped_ports)
 		print("Ports Scanned: ", ports_scanned)
 		print()
+	else:
+		if not opened_ports:
+			print()
+			print("Opened Ports : ", opened_ports)
+			print("Hosts Scanned: ", hosts_scanned)
+			print("Ports Scanned: ", ports_scanned)
+			print()
 
 	if args.output:
 		fp_output.close()
