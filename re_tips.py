@@ -86,3 +86,9 @@ print ( re.search('[a-zA-Z]', string_2) )
 print ( any(c.isalpha() for c in string_1) )
 print ( any(c.isalpha() for c in string_2) )
 
+##################################################################################################
+### Tip 3
+##################################################################################################
+
+# String replacement using Python 3 re.sub
+# https://stackoverflow.com/questions/32974191/string-replacement-using-python-3-re-sub
