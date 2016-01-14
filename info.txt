@@ -1,0 +1,13 @@
+random information
+==================
+
+How to find wifi password of your current network
+-------------------------------------------------
+Windows:
+netsh wlan show profile name=iblogwith key=clear
+netsh wlan show profiles (list curren & previous wifi connections)
+Mac:
+KeyChain Access
+Search for the WiFi SSID & double-click
+Check "Show password" and enter admin passwords
+
