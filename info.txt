@@ -11,3 +11,6 @@ KeyChain Access
 Search for the WiFi SSID & double-click
 Check "Show password" and enter admin passwords
 
+How To Prevent Your Computer From Waking Up Accidentally
+--------------------------------------------------------
+http://www.howtogeek.com/122954/how-to-prevent-your-computer-from-waking-up-accidentally/
