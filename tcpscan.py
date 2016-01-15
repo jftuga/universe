@@ -16,14 +16,17 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.07"
-pgm_date = "Jan-3-2016 08:30"
+pgm_version = "1.08"
+pgm_date = "Jan-15-2016 06:09"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
 
 # default connect timeout when checking a port, changed with -t
 connect_timeout = 0.07
+
+# list of ports to scan if -p is not given on the command line
+default_port_list = "20,21,22,23,25,47,53,69,80,110,113,123,135,137,138,139,143,161,179,194,201,311,389,427,443,445,465,500,513,514,515,530,548,554,563,587,593,601,631,636,660,674,691,694,749,751,843,873,901,902,903,987,990,992,993,994,995,1000,1167,1234,1433,1434,1521,1528,1723,1812,1813,2000,2049,2375,2376,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,2483,2484,2638,3000,3260,3283,3306,3389,3478,3690,4000,5000,5432,5433,6000,6667,7000,8000,8080,8443,8880,8888,9000,9001,9418,9998,27017,27018,27019,28017,32400"
 
 # initialize other globals...
 active_hosts = defaultdict(list)
@@ -34,12 +37,10 @@ opened_ports = 0
 ports_scanned = 0
 skipped_port_list = []
 
-default_port_list = "20,21,22,23,25,47,53,69,80,110,113,123,135,137,138,139,143,161,179,194,201,311,389,427,443,445,465,500,513,514,515,530,548,554,563,587,593,601,631,636,660,674,691,694,749,751,843,873,901,902,903,987,990,992,993,994,995,1000,1167,1234,1433,1434,1521,1528,1723,1812,1813,2000,2049,2375,2376,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,2483,2484,2638,3000,3260,3283,3306,3389,3478,3690,4000,5000,5432,5433,6000,6667,7000,8000,8080,8443,8880,8888,9000,9001,9418,9998,27017,27018,27019,28017,32400"
-
 #############################################################################################
 
 def scan_one_host(ip,ports):
-	global args,max_workers, connect_timeout, hosts_scanned
+	global args, max_workers, connect_timeout, hosts_scanned
 
 	hosts_scanned += 1
 	if ports.find("-") > 0 and ports.find(",") == -1:
@@ -48,7 +49,7 @@ def scan_one_host(ip,ports):
 		start = int(start)
 		end = int(end)
 		if end < start:
-			print();print("Error: For -p option, ending port is less that starting port");print()
+			print("\nError: For -p option, ending port is less that starting port\n")
 			sys.exit(1)		
 		port_list = list(range(start,end+1))
 	else:
@@ -103,12 +104,8 @@ def scan_one_port(ip,port):
 		print("You pressed Ctrl+C")
 		return False
 
-	except socket.gaierror:
-		print('Hostname could not be resolved')
-		return False
-
 	except socket.error:
-		print("Couldn't connect to server")
+		print("Couldn't connect to server %s on port %s" % (ip,port))
 		return False
 
 #############################################################################################
@@ -122,7 +119,7 @@ def create_skipped_port_list(ports):
 		start = int(start)
 		end = int(end)
 		if end < start:
-			print();print("Error: For -X option, ending port is less that starting port");print()
+			print("\nError: For -X option, ending port is less that starting port\n")
 			sys.exit(1)
 		skipped_port_list = list(range(start,end+1))
 	else:
@@ -137,12 +134,12 @@ def main():
 	global skipped_hosts, skipped_ports, hosts_scanned
 
 	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
-	parser.add_argument("target", help="examples: 192.168.1.0/24 192.168.1.100 www.example.com")
-	parser.add_argument("-x", "--skipnetblock", help="skip a sub-netblock, example: 192.168.1.96/28")
-	parser.add_argument("-X", "--skipports", help="exclude a subset of ports, example: example: 135-139")
-	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, example: 22,80,443,445,515  example: 80-515")
-	parser.add_argument("-T", "--threads", help="number of concurrent threads, example: 25")
-	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, example: 0.2")
+	parser.add_argument("target", help="e.g. 192.168.1.0/24 192.168.1.100 www.example.com")
+	parser.add_argument("-x", "--skipnetblock", help="skip a sub-netblock, e.g. 192.168.1.96/28")
+	parser.add_argument("-X", "--skipports", help="exclude a subset of ports, e.g. 135-139")
+	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, e.g. 22,80,443,445,515  e.g. 80-515")
+	parser.add_argument("-T", "--threads", help="number of concurrent threads, default: %s" % (max_workers))
+	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, default: %s" % (connect_timeout))
 	parser.add_argument("-s", "--shufflehosts", help="randomize the order IPs are scanned", action="store_true")
 	parser.add_argument("-S", "--shuffleports", help="randomize the order ports are scanned", action="store_true")
 	parser.add_argument("-c", "--closed", help="output ports that are closed", action="store_true")
@@ -195,7 +192,11 @@ def main():
 				if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
 			skipped_hosts += 1
 			continue
-		scan_one_host( "%s" % (my_ip), port_list )
+		try:
+			scan_one_host( "%s" % (my_ip), port_list )
+		except KeyboardInterrupt:
+			print("\nYou pressed Ctrl+C")
+			sys.exit(1)
 
 	t2 = datetime.now()
 	total =	t2 - t1
