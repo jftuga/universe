@@ -8,9 +8,13 @@ map #1 0vwhxi<tab><esc>j
 map #2 0vwhxi<tab><tab><esc>j
 map #3 0vwhxi<tab><tab><tab><esc>j
 map #4 0vwhxi<tab><tab><tab><tab><esc>j
-set ts=4
+
+set expandtab
+set tabstop=4
+set shiftwidth=4
 set ai
 set showmatch
+" ic -> ignorecase
 set ic
 set incsearch
 set showmatch
@@ -20,7 +24,8 @@ set autochdir
 nunmap <C-A>
 " http://vim.wikia.com/wiki/Increasing_or_decreasing_numbers
 
-colorscheme elflord
+"colorscheme elflord
+colorscheme desert
 syntax on
 filetype on
 filetype plugin on
