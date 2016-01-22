@@ -56,8 +56,8 @@ import itertools, os, os.path, sys, time
 import concurrent.futures, random, numpy
 import subprocess, shlex
 
-pgm_version = "2.00"
-pgm_date = "Jan-21-2016 15:14"
+pgm_version = "2.01"
+pgm_date = "Jan-22-2016 09:32"
 
 #############################################################################
 
@@ -70,8 +70,8 @@ pgm = 'C:\\Program Files\\TrueCrypt\\TrueCrypt.exe'
 #cmd = '"%s" /m ro /q /s /k %s /l %s /v %s /hash %s /p ' % (pgm, keyfile, drive_mount_letter, tcfile, hash_type)
 
 # number of concurrent passwords to try
-# start off with 4x the number of CPU cores
-max_workers=16
+# start off with either 2x or 4x the number of CPU cores
+max_workers=8
 
 # a list of passwords, one per line
 # these will be concatenated togther up to 'pwlen' words
@@ -93,6 +93,12 @@ drive_mount_point = '%s:\\nul' % (drive_mount_letter)
 #keyfile = 'c:\\\\tc\\\\secure.key'
 cmd = '"%s" /m ro /q /s /l%s /v %s /p ' % (pgm, drive_mount_letter, tcfile)
 dismount_cmd = '"%s" /d /l%s /s /q' % (pgm, drive_mount_letter)
+
+# a checkpoint file will periodically save where you are at within the pwlist
+# if a checkpoint file exists when restarting, the password attempts will
+# resume from the last checkpoint
+checkpoint_groups = 10
+checkpoint_fname = "%s.chkpt" % (tcfile)
 
 # other globals
 
@@ -206,7 +212,7 @@ def guess_one_group(passwd_grp):
 
 # script exection starts here
 def main():
-	global eureka, attempts
+	global eureka, attempts, pwlen
 
 	if is_mounted():
 		print( "%s is already mounted, program aborted." % (drive_mount_letter))
@@ -234,17 +240,39 @@ def main():
 	start_time = time.localtime()
 	end_time = False
 	with open(fname_pwlist) as fp: pw_fragment_list = fp.read().splitlines()
-	print("password fragments loaded from %s: %d\n" % (fname_pwlist, len(pw_fragment_list)) )
+	print("password fragments loaded from %s: %d" % (fname_pwlist, len(pw_fragment_list)) )
+	if os.path.exists( checkpoint_fname ):
+		with open(checkpoint_fname) as fp: checkpoint_list = fp.read().splitlines()
+		last = checkpoint_list[-1]
+		old_timestamp,old_pwlen,move_to_chk_num,old_attempts = last.split("\t")
+		pwlen = int(old_pwlen)
+		print("checkpoint file found, continuing from last checkpoint location of %s:%s\n" % (pwlen,move_to_chk_num))
+		move_to_chk_num = int(move_to_chk_num) - 1
+	else:
+		move_to_chk_num = 0
+		print()
 
+	# main processing loop
 	for curr_pwlen in range(pwlen,0,-1):
 		print("="*20, "trying password of group length: %d" % (curr_pwlen))
 
 		items = itertools.permutations(pw_fragment_list, curr_pwlen)
-		passwd_list = numpy.array_split( list(items), max_workers)
+		passwd_list = numpy.array_split( list(items), checkpoint_groups)
 
+		chk = 0
 		for grp in passwd_list:
 			if eureka: break
+			if move_to_chk_num:
+				chk += 1
+				move_to_chk_num -= 1
+				continue
+			chk +=1
+
+			now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+			print("[%s] group length: %s checkpoint: %s" % (now,curr_pwlen,chk))
 			guess_one_group(grp)
+			now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+			with open(checkpoint_fname,mode="a") as fp: fp.write("%s\t%s\t%s\t%s\n" % (now,curr_pwlen,chk,attempts))
 
 		if eureka:
 			get_pw_from_candidates()
