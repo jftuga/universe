@@ -50,6 +50,14 @@ optional: keyfile
 
 Good Luck!
 
+future research
+===============
+https://www.nccgroup.trust/uk/about-us/newsroom-and-events/blogs/2015/april/a-back-to-front-truecrypt-recovery-story-the-plaintext-is-the-ciphertext/
+https://github.com/nccgroup/Untrue
+http://stackoverflow.com/q/18286855/452281
+http://blog.bjrn.se/2008/02/truecrypt-explained-truecrypt-5-update.html
+https://github.com/doegox/python-cryptoplus
+
 """
 
 import itertools, os, os.path, sys, time
