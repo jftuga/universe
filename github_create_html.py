@@ -56,7 +56,7 @@ def table_add(fname, desc, bg=False):
 	tmp = "%s" % (datetime.datetime.fromtimestamp(mtime))
 	last_modified_date = tmp[:19]
 
-	desc = desc.replace("&","&amp;").replace('"',"&quot;").replace("'","&quot;").replace("<","&lt;").replace(">","&gt;")
+	desc = desc.replace("&","&amp;").replace('"',"&quot;").replace("<","&lt;").replace(">","&gt;")
 
 	if bg:
 		print("<tr>")
