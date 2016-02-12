@@ -8,10 +8,13 @@
 # displays recursive directory disk usage, plus totals
 
 import os, sys, locale, argparse
-from os.path import join, getsize, isdir
+from os.path import join, getsize, isdir, splitext
+from collections import defaultdict
 
-pgm_version = "1.00"
-pgm_date = "Nov-16-2015 15:24"
+pgm_version = "1.01"
+pgm_date = "Feb-12-2016 15:13"
+
+
 
 #############################################################################
 
@@ -28,8 +31,10 @@ def fmt(n,precision=2):
 
 #############################################################################
 
-def get_disk_usage(parameter=".",verbose=True):
-	
+def get_disk_usage(parameter=".",want_ext=False,verbose=True):
+
+	extensions = defaultdict(int)
+	longest_ext = ""
 	total = 0
 	dir_total = 0
 	file_count = 0
@@ -40,6 +45,10 @@ def get_disk_usage(parameter=".",verbose=True):
 		dir_count += 1
 		current = 0
 		for name in files:
+			if want_ext:
+				tmp = os.path.splitext(name)[1][1:].lower()
+				extensions[tmp] += 1
+				if len(tmp) > len(longest_ext): longest_ext=tmp
 			fullname = join(root,name)
 			try:
 				current += getsize(fullname)
@@ -70,17 +79,26 @@ def get_disk_usage(parameter=".",verbose=True):
 		print("%s gigabytes" % ( fmt(total / 1024.0 ** 3)))
 	print()
 
+	if want_ext:
+		t=0
+		width = len(longest_ext)+2
+		for e in sorted(extensions, key=extensions.get, reverse=True):
+			spc = width - len(e)
+			print("%s%s%s" % (e," "*spc,extensions[e]))
+		print()
+		
 #############################################################################
 
 def main():
 	parser = argparse.ArgumentParser(description="Display recursive directory disk usage, plus totals", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("dname", help="directory name", nargs="?", default=".")
+	parser.add_argument("-e", "--ext", help="summarize file extensions", action="store_true")
 	parser.add_argument("-q", "--quiet", help="don't display individual directories", action="store_true")
 	args = parser.parse_args()
 
 	verbose = False if args.quiet else True
 	if isdir(args.dname):
-		get_disk_usage(args.dname,verbose)
+		get_disk_usage(args.dname,args.ext,verbose)
 	else:
 		print(); safe_print("Error: command-line parameter is not a directory: %s" % args.dname); print()
 		return 1
