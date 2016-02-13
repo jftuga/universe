@@ -4,11 +4,11 @@
 tcpscan.py 
 -John Taylor
 
-A simple, multi-threaded TCP port scanner
-Python 3.5
-"""
+A simple, multi-threaded IPv4 TCP port scanner for Python 3.5
 
-# https://stackoverflow.com/questions/3898572/what-is-the-standard-python-docstring-format
+For help, run: tcpscan.py -h
+
+"""
 
 import sys
 import socket
@@ -19,8 +19,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.09"
-pgm_date = "Feb-12-2016 20:09"
+pgm_version = "1.10"
+pgm_date = "Feb-13-2016 08:18"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -202,7 +202,7 @@ def main() -> None:
 	global max_workers, connect_timeout
 	global skipped_hosts, skipped_ports, hosts_scanned
 
-	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
+	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded IPv4 TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("target", help="e.g. 192.168.1.0/24 192.168.1.100 www.example.com")
 	parser.add_argument("-x", "--skipnetblock", help="skip a sub-netblock, e.g. 192.168.1.96/28")
 	parser.add_argument("-X", "--skipports", help="exclude a subset of ports, e.g. 135-139")
