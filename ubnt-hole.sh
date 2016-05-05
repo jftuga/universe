@@ -68,7 +68,7 @@ wget -O ${WORK}/ad_9.txt "https://raw.githubusercontent.com/quidsup/notrack/mast
 echo
 echo Clean and consolidate...
 echo
-cat ${WORK}/ad_*.txt | sed -e 's/0\.0\.0\.0 //g' -e 's/127\.0\.0\.1//g' -e 's/#.*//' -e 's/\r//g' | grep -v ^# | grep -v ^$ | tr '[A-Z]' '[a-z]' | sort | uniq > ${CLEAN}
+cat ${WORK}/ad_*.txt | sed -e 's/0\.0\.0\.0 //g' -e 's/127\.0\.0\.1//g' -e 's/#.*//' -e 's/\r//g' | grep -v "^#" | grep -v ^$ | tr '[A-Z]' '[a-z]' | sort | uniq > ${CLEAN}
 
 
 echo
