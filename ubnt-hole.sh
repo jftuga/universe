@@ -21,7 +21,7 @@
 #     include: "/etc/unbound/lan_hosts"
 #     statistics-interval: 3600
 #     interface: 192.168.1.2
-#     outgoing-interface: 172.22.2.7
+#     outgoing-interface: 192.168.1.2
 #     access-control: 127.0.0.0/8 allow
 #     access-control: 192.168.1.0/24 allow
 #     logfile: "/var/log/unbound.log"
