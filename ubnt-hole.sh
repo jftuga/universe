@@ -4,11 +4,12 @@
 # -John Taylor
 # May-4-2016
 
-# This is inspired by https://pi-hole.net/ It it used on a Ubiquity
+# This is inspired by https://pi-hole.net/ It is used on a Ubiquity
 # EdgeRouter Lite in conjunction with unbound DNS server.  The version
 # of Unbound that ships with the router is buggy and Unbound will
 # crash every few days.  I recommend upgrading to version 1.4.22, which
 # you will need to compile from source: apt-get install build-essential 
+# to install gcc, make, etc.
 
 # example cron entry:
 # 02 15 * * * /root/ubnt-hole/create_bad_hosts_file.sh > /root/ubnt-hole/create_bad_hosts.log 2>&1
