@@ -1,15 +1,14 @@
 #!/bin/bash
 
-# ubnt-hole.sh
+# create_bad_hosts_file.sh
 # -John Taylor
-# May-4-2016
+# May-11-2016
 
-# This is inspired by https://pi-hole.net/ It is used on a Ubiquity
+# This is inspired by https://pi-hole.net/ It it used on a Ubiquity
 # EdgeRouter Lite in conjunction with unbound DNS server.  The version
 # of Unbound that ships with the router is buggy and Unbound will
 # crash every few days.  I recommend upgrading to version 1.4.22, which
 # you will need to compile from source: apt-get install build-essential 
-# to install gcc, make, etc.
 
 # example cron entry:
 # 02 15 * * * /root/ubnt-hole/create_bad_hosts_file.sh > /root/ubnt-hole/create_bad_hosts.log 2>&1
@@ -34,6 +33,7 @@
 # contains a list of bad/undesirable dns names (not included by what is downloaded), one per line
 # lan_hosts:
 # contains dns for your local subnet, one entry per line, format:
+# local-zone: "pri." static
 # local-data: "mydesktop.pri A 192.168.1.3"
 
 
@@ -68,7 +68,7 @@ wget -O ${WORK}/ad_9.txt "https://raw.githubusercontent.com/quidsup/notrack/mast
 echo
 echo Clean and consolidate...
 echo
-cat ${WORK}/ad_*.txt | sed -e 's/0\.0\.0\.0 //g' -e 's/127\.0\.0\.1//g' -e 's/#.*//' -e 's/\r//g' | grep -v "^#" | grep -v ^$ | tr '[A-Z]' '[a-z]' | sort | uniq > ${CLEAN}
+cat ${WORK}/ad_*.txt | sed -e 's/0\.0\.0\.0 //g' -e 's/127\.0\.0\.1//g' -e 's/#.*//' -e 's/\r//g' -e 's/\.$//' | grep -v "^#" | grep -v ^$ | tr '[A-Z]' '[a-z]' | sort | uniq > ${CLEAN}
 
 
 echo
