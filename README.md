@@ -47,3 +47,9 @@
 
 - https://stackoverflow.com/questions/179123/edit-an-incorrect-commit-message-in-git
 
+## Overwrite local change with version from repo
+
+- git checkout HEAD^ file/to/change
+- git pull
+- see also: http://stackoverflow.com/a/14319943/452281
+
