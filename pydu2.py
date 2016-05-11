@@ -11,8 +11,8 @@ import os, sys, locale, argparse
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.01"
-pgm_date = "Feb-12-2016 15:13"
+pgm_version = "1.02"
+pgm_date = "May-11-2016 03:24"
 
 
 
@@ -31,7 +31,7 @@ def fmt(n,precision=2):
 
 #############################################################################
 
-def get_disk_usage(parameter=".",want_ext=False,verbose=True):
+def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False):
 
 	extensions = defaultdict(int)
 	longest_ext = ""
@@ -61,6 +61,9 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True):
 
 		# directory size in kilobytes
 		if verbose: safe_print("%s\t%s" % (fmt(round(dir_total/1024.0,0),0), root))
+		if status:
+			if not (dir_count % 100):
+				print("Directories processed:", dir_count,file=sys.stderr)
 
 	locale.setlocale(locale.LC_ALL, '')
 	print()
@@ -94,11 +97,19 @@ def main():
 	parser.add_argument("dname", help="directory name", nargs="?", default=".")
 	parser.add_argument("-e", "--ext", help="summarize file extensions", action="store_true")
 	parser.add_argument("-q", "--quiet", help="don't display individual directories", action="store_true")
+	parser.add_argument("-s", "--status", help="send processing status to STDERR", action="store_true")
 	args = parser.parse_args()
 
 	verbose = False if args.quiet else True
+
 	if isdir(args.dname):
-		get_disk_usage(args.dname,args.ext,verbose)
+		try:
+			get_disk_usage(args.dname,args.ext,verbose,args.status)
+		except KeyboardInterrupt:
+			print(); print();
+			print("You pressed Ctrl+C")
+			print();
+			return 1
 	else:
 		print(); safe_print("Error: command-line parameter is not a directory: %s" % args.dname); print()
 		return 1
