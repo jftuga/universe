@@ -18,9 +18,10 @@ pgm_date = "May-11-2016 03:24"
 
 #############################################################################
 
-def safe_print(data):
+def safe_print(data,isError=False):
+    dest = sys.stdout if not isError else sys.stderr
     # can also use 'replace' instead of 'ignore' for errors= parameter
-    print( str(data).encode(sys.stdout.encoding, errors='ignore').decode(sys.stdout.encoding) )
+    print( str(data).encode(sys.stdout.encoding, errors='ignore').decode(sys.stdout.encoding), file=dest )
 
 #############################################################################
 
@@ -54,7 +55,7 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False):
 				current += getsize(fullname)
 				file_count += 1
 			except:
-				safe_print("Error: unable to read: %s" % fullname)
+				safe_print("Error: unable to read: %s" % fullname, isError=True)
 				err_count += 1
 		total += current
 		dir_total += current
@@ -106,12 +107,15 @@ def main():
 		try:
 			get_disk_usage(args.dname,args.ext,verbose,args.status)
 		except KeyboardInterrupt:
-			print(); print();
-			print("You pressed Ctrl+C")
-			print();
+			safe_print("", isError=True)
+			safe_print("", isError=True)
+			safe_print("You pressed Ctrl+C", isError=True)
+			safe_print("", isError=True)
 			return 1
 	else:
-		print(); safe_print("Error: command-line parameter is not a directory: %s" % args.dname); print()
+		safe_print("", isError=True)
+		safe_print("Error: command-line parameter is not a directory: %s" % args.dname, isError=True)
+		safe_print("", isError=True)
 		return 1
 
 	return 0
@@ -120,3 +124,4 @@ def main():
 
 if "__main__" == __name__:
 	sys.exit( main() )
+
