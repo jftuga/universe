@@ -11,8 +11,8 @@ import os, sys, locale, argparse
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.02"
-pgm_date = "May-11-2016 03:24"
+pgm_version = "1.03"
+pgm_date = "May-11-2016 21:51"
 
 
 
