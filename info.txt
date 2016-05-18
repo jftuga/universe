@@ -20,3 +20,15 @@ SSH tunnelling for fun and profit: AutoSSH
 https://news.ycombinator.com/item?id=10937277
 http://www.everythingcli.org/ssh-tunnelling-for-fun-and-profit-autossh/
 See also: https://github.com/apenwarr/sshuttle
+
+How to limit SSH brute force attempts
+-------------------------------------
+http://serverfault.com/a/217066/46738
+
+ufw  supports  connection rate limiting, which is useful for protecting
+against brute-force login attacks. When a limit rule is used, ufw will
+normally  allow  the  connection  but  will  deny  connections if an IP
+address attempts to initiate 6 or more connections within 30 seconds.
+See http://www.debian-administration.org/articles/187 for details.
+
+Typical usage is: ufw limit ssh/tcp
