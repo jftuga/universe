@@ -2,7 +2,7 @@
 
 # create_bad_hosts_file.sh
 # -John Taylor
-# May-11-2016
+# May-19-2016
 
 # This is inspired by https://pi-hole.net/ It it used on a Ubiquity
 # EdgeRouter Lite in conjunction with unbound DNS server.  The version
@@ -83,6 +83,26 @@ fi
 
 if [ -e ${BLACKLIST} ] ; then
     cat ${BLACKLIST} | mawk '{ printf("local-data: %c%s A 127.0.0.1%c\n",34,$1,34) }' >> ${FINAL}
+fi
+
+
+echo
+echo Remove very old backups...
+echo
+ARCHIVES="${TARGET}/bad_hosts--20*.xz"
+COUNT=`ls ${ARCHIVES}| wc -l`
+
+# keep the newest $MAX number of backup archives
+MAX=20
+
+if [ "${COUNT}" -gt "${MAX}" ] ; then
+    OLD=`expr ${COUNT} - ${MAX}`
+    echo "Removing ${OLD} old backup files:"
+    ls -tr ${ARCHIVES} | head -${OLD} | xargs rm
+    echo
+else
+    echo There are no old backup files to remove
+    echo
 fi
 
 
