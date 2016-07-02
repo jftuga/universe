@@ -40,3 +40,10 @@ http://www.techieshelp.com/hp-and-cisco-link-aggregation-guide/
 A curated list of best applications and tools for Windows
 ---------------------------------------------------------
 https://github.com/Awesome-Windows/Awesome
+
+Upgrade HP Procurve Firmware
+----------------------------
+show flash
+copy sftp flash user@192.168.1.45 port 22 /R/hp/J_15_xxx_yyyy.swi secondary
+show flash
+boot system flash secondary
