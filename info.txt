@@ -47,3 +47,6 @@ show flash
 copy sftp flash user@192.168.1.45 port 22 /R/hp/J_15_xxx_yyyy.swi secondary
 show flash
 boot system flash secondary
+(after successful reboot & verification):
+copy flash flash primary
+boot system flash primary
