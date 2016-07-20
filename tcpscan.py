@@ -19,8 +19,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.10"
-pgm_date = "Feb-13-2016 08:18"
+pgm_version = "1.11"
+pgm_date = "Jul-20-2016 15:19"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -39,6 +39,7 @@ skipped_ports = 0
 opened_ports = 0
 ports_scanned = 0
 skipped_port_list = []
+resolve_dns = 0
 
 #############################################################################################
 
@@ -106,7 +107,7 @@ def scan_one_port(ip: str, port:str) -> bool:
 	"""
 
 	global args, fp_output, active_hosts, opened_ports, ports_scanned
-	global max_workers, connect_timeout, skipped_port_list, skipped_ports
+	global max_workers, connect_timeout, skipped_port_list, skipped_ports, resolve_dns
 	port = int(port)
 	if port > 65535:
 		print("\nError: Port is greater than 65535\n")
@@ -130,7 +131,15 @@ def scan_one_port(ip: str, port:str) -> bool:
 			valid = True
 			opened_ports += 1
 			active_hosts[ip].append(port)
-			line = "{}\t{}\topen".format(ip, port)
+			if resolve_dns:
+				try:
+					name = socket.gethostbyaddr(ip)
+					name = name[0]
+				except:
+					name = ""
+				line = "{}\t{}\topen\t{}".format(ip, port,name)
+			else:
+				line = "{}\t{}\topen".format(ip, port)
 			print(line)
 			if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
 		else:
@@ -201,6 +210,7 @@ def main() -> None:
 	global args, fp_output, default_port_list
 	global max_workers, connect_timeout
 	global skipped_hosts, skipped_ports, hosts_scanned
+	global resolve_dns
 
 	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded IPv4 TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("target", help="e.g. 192.168.1.0/24 192.168.1.100 www.example.com")
@@ -213,6 +223,7 @@ def main() -> None:
 	parser.add_argument("-S", "--shuffleports", help="randomize the order ports are scanned", action="store_true")
 	parser.add_argument("-c", "--closed", help="output ports that are closed", action="store_true")
 	parser.add_argument("-o", "--output", help="output to CSV file")
+	parser.add_argument("-d", "--dns", help="revolve IPs to dns names", action="store_true")
 	parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
 
 	args = parser.parse_args()
@@ -251,6 +262,9 @@ def main() -> None:
 			tmp = args.target.replace("/32","")
 			hosts = (tmp,)
 	
+	if args.dns:
+		resolve_dns = True
+
 	t1 = datetime.now()
 	for tmp in hosts:
 		my_ip = "%s" % (tmp)
