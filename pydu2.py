@@ -3,7 +3,7 @@
 # pydu2.py
 # -John Taylor
 # Sep-9-2005
-# revamp on Sep-10-2015, Nov-15-2015
+# revamp on Sep-10-2015, Nov-15-2015, Jul-22-2016
 
 # displays recursive directory disk usage, plus totals
 
@@ -11,8 +11,8 @@ import os, sys, locale, argparse
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.04"
-pgm_date = "Jul-22-2016 10:23"
+pgm_version = "1.05"
+pgm_date = "Jul-22-2016 10:33"
 
 
 
@@ -82,8 +82,11 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False):
 		print("%s megabytes" % ( fmt(total / 1024 ** 2 )))
 	if total > 1181116006:
 		print("%s gigabytes" % ( fmt(total / 1024.0 ** 3)))
-	if total > 999556025589:
+	if total > 1209462790144:
 		print("%s terabytes" % ( fmt(total / 1024.0 ** 4)))
+	if total > 1238489897107456:
+		print("%s petabytes" % ( fmt(total / 1024.0 ** 5)))
+		
 	print()
 
 	if want_ext:
