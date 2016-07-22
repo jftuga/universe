@@ -11,8 +11,8 @@ import os, sys, locale, argparse
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.03"
-pgm_date = "May-11-2016 21:51"
+pgm_version = "1.04"
+pgm_date = "Jul-22-2016 10:23"
 
 
 
@@ -75,12 +75,15 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False):
 
 	print()
 	print("%s bytes" % ( fmt(total,0) ))
+	# comparison values are about 90.909% of kilo,mega,giga, and terabyte
 	if total > 1126:
 		print("%s kilobytes" % ( fmt(total / 1024.0 )))
 	if total > 1153433:
 		print("%s megabytes" % ( fmt(total / 1024 ** 2 )))
 	if total > 1181116006:
 		print("%s gigabytes" % ( fmt(total / 1024.0 ** 3)))
+	if total > 999556025589:
+		print("%s terabytes" % ( fmt(total / 1024.0 ** 4)))
 	print()
 
 	if want_ext:
