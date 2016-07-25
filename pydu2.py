@@ -11,8 +11,8 @@ import os, sys, locale, argparse
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.05"
-pgm_date = "Jul-22-2016 10:33"
+pgm_version = "1.06"
+pgm_date = "Jul-25-2016 00:12"
 
 
 
@@ -32,7 +32,7 @@ def fmt(n,precision=2):
 
 #############################################################################
 
-def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False):
+def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdot=False):
 
 	extensions = defaultdict(int)
 	longest_ext = ""
@@ -42,6 +42,9 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False):
 	dir_count = 0
 	err_count = 0
 	for root, dirs, files in os.walk( parameter ):
+		if skipdot and "\\." in root:
+			#print("skipping: ", root)
+			continue
 		dir_total = 0
 		dir_count += 1
 		current = 0
@@ -105,13 +108,14 @@ def main():
 	parser.add_argument("-e", "--ext", help="summarize file extensions", action="store_true")
 	parser.add_argument("-q", "--quiet", help="don't display individual directories", action="store_true")
 	parser.add_argument("-s", "--status", help="send processing status to STDERR", action="store_true")
+	parser.add_argument("-n", "--nodot", help="skip directories starting with '.'", action="store_true")
 	args = parser.parse_args()
 
 	verbose = False if args.quiet else True
 
 	if isdir(args.dname):
 		try:
-			get_disk_usage(args.dname,args.ext,verbose,args.status)
+			get_disk_usage(args.dname,args.ext,verbose,args.status,args.nodot)
 		except KeyboardInterrupt:
 			safe_print("", isError=True)
 			safe_print("", isError=True)
