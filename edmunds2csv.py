@@ -5,7 +5,7 @@
 # May-26-2016
 
 # This script takes Edmunds monthly "$199 Lease Deals" and converts it to a CSV file which
-# is then suitable to use in a spreasdsheet.
+# is then suitable to use in a spreasdsheet such as Microsoft Excel, Apple Numbers or Google Sheets.
 # You will then be able to sort data by different columns.
 
 # Start from: http://www.edmunds.com/car-leasing/monthly-199-lease-deals.html
