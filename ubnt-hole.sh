@@ -55,7 +55,8 @@ echo Downloading...
 echo
 
 wget -O ${WORK}/ad_1.txt "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
-wget -O ${WORK}/ad_2.txt "http://adblock.gjtech.net/?format=unix-hosts"
+# 2016-08-13 maybe the below URL is not working anymore??
+# wget -O ${WORK}/ad_2.txt "http://adblock.gjtech.net/?format=unix-hosts"
 wget -O ${WORK}/ad_3.txt "http://mirror1.malwaredomains.com/files/justdomains"
 wget -O ${WORK}/ad_4.txt "http://sysctl.org/cameleon/hosts"
 wget -O ${WORK}/ad_5.txt "http://zeustracker.abuse.ch/blocklist.php?download=domainblocklist"
@@ -76,14 +77,16 @@ echo Convert to unbound format...
 echo
 
 if [ -e ${WHITELIST} ] ; then
-    cat ${CLEAN} | grep -v -f ${WHITELIST} | mawk '{ printf("local-data: %c%s A 127.0.0.1%c\n",34,$1,34) }' | sort | uniq > ${FINAL}
+    cat ${CLEAN} | grep -v -f ${WHITELIST} | mawk '{ printf("local-data: %c%s A 127.0.0.1%c\n",34,$1,34) }' | sort | uniq > ${FINAL}.tmp
 else
-    cat ${CLEAN} | mawk '{ printf("local-data: %c%s A 127.0.0.1%c\n",34,$1,34) }' | sort | uniq > ${FINAL}
+    cat ${CLEAN} | mawk '{ printf("local-data: %c%s A 127.0.0.1%c\n",34,$1,34) }' | sort | uniq > ${FINAL}.tmp
 fi
 
 if [ -e ${BLACKLIST} ] ; then
-    cat ${BLACKLIST} | mawk '{ printf("local-data: %c%s A 127.0.0.1%c\n",34,$1,34) }' >> ${FINAL}
+    cat ${BLACKLIST} | mawk '{ printf("local-data: %c%s A 127.0.0.1%c\n",34,$1,34) }' >> ${FINAL}.tmp
 fi
+
+egrep -v '\{|\}|/\*|/\*|\" A 127|\(|\)|<|>|::|,' ${FINAL}.tmp >> ${FINAL}
 
 
 echo
@@ -97,7 +100,7 @@ MAX=20
 
 if [ "${COUNT}" -gt "${MAX}" ] ; then
     OLD=`expr ${COUNT} - ${MAX}`
-    echo "Removing ${OLD} old backup files:"
+    echo "Removing ${OLD} old backup files..."
     ls -tr ${ARCHIVES} | head -${OLD} | xargs rm
     echo
 else
