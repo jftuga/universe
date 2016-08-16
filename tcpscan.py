@@ -13,14 +13,15 @@ For help, run: tcpscan.py -h
 import sys
 import socket
 import argparse
+import time
 import concurrent.futures
 from collections import defaultdict
 from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.11"
-pgm_date = "Jul-20-2016 15:19"
+pgm_version = "1.12"
+pgm_date = "Aug-16-2016 13:42"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -30,6 +31,11 @@ connect_timeout = 0.07
 
 # list of ports to scan if -p is not given on the command line
 default_port_list = "20,21,22,23,25,47,53,69,80,110,113,123,135,137,138,139,143,161,179,194,201,311,389,427,443,445,465,500,513,514,515,530,548,554,563,587,593,601,631,636,660,674,691,694,749,751,843,873,901,902,903,987,990,992,993,994,995,1000,1167,1234,1433,1434,1521,1528,1723,1812,1813,2000,2049,2375,2376,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,2483,2484,2638,3000,3260,3283,3306,3389,3478,3690,4000,5000,5432,5433,6000,6667,7000,8000,8080,8443,8880,8888,9000,9001,9418,9998,27017,27018,27019,28017,32400"
+
+# periodically display runtime stats to STDERR, in seconds
+runtime_stats = 0
+runtime_stats_last_timestamp = 0
+runtime_stats_last_port_count = 0
 
 # initialize variables
 active_hosts = defaultdict(list)
@@ -108,6 +114,8 @@ def scan_one_port(ip: str, port:str) -> bool:
 
 	global args, fp_output, active_hosts, opened_ports, ports_scanned
 	global max_workers, connect_timeout, skipped_port_list, skipped_ports, resolve_dns
+	global runtime_stats, runtime_stats_last_timestamp, runtime_stats_last_port_count
+
 	port = int(port)
 	if port > 65535:
 		print("\nError: Port is greater than 65535\n")
@@ -117,7 +125,9 @@ def scan_one_port(ip: str, port:str) -> bool:
 		if args.verbose:
 			line = "{}\t{}\tport-excluded".format(ip,port)
 			print(line)
-			if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
+			if args.output: 
+				fp_output.write("%s\n" % (line.replace("\t",",")))
+				fp_output.flush()
 		skipped_ports += 1
 		return False
 
@@ -141,15 +151,27 @@ def scan_one_port(ip: str, port:str) -> bool:
 			else:
 				line = "{}\t{}\topen".format(ip, port)
 			print(line)
-			if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
+			if args.output: 
+				fp_output.write("%s\n" % (line.replace("\t",",")))
+				fp_output.flush()
 		else:
 			valid = False
 			if args.closed: 
 				line = "{}\t{}\tclosed".format(ip, port)
 				print(line)
-				if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
+				if args.output: 
+					fp_output.write("%s\n" % (line.replace("\t",",")))
+					fp_output.flush()
 			
 		sock.close()
+		if runtime_stats:
+			now = int(time.time())
+			if (now-runtime_stats_last_timestamp) >= runtime_stats:
+				runtime_stats_last_timestamp = now
+				pps = (ports_scanned-runtime_stats_last_port_count) / runtime_stats
+				print("[%s]\thosts:%s\tports:%s\tports/sec:%s" % (time.strftime("%Y-%m-%d %H:%M:%S"),hosts_scanned,ports_scanned,int(pps)), file=sys.stderr)
+				runtime_stats_last_port_count = ports_scanned
+
 		return valid
 
 	except KeyboardInterrupt:
@@ -210,7 +232,7 @@ def main() -> None:
 	global args, fp_output, default_port_list
 	global max_workers, connect_timeout
 	global skipped_hosts, skipped_ports, hosts_scanned
-	global resolve_dns
+	global resolve_dns, runtime_stats, runtime_stats_last_timestamp
 
 	parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded IPv4 TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("target", help="e.g. 192.168.1.0/24 192.168.1.100 www.example.com")
@@ -225,6 +247,7 @@ def main() -> None:
 	parser.add_argument("-o", "--output", help="output to CSV file")
 	parser.add_argument("-d", "--dns", help="revolve IPs to dns names", action="store_true")
 	parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
+	parser.add_argument("-r", "--runtime", help="periodically display runtime stats every X seconds to STDERR")
 
 	args = parser.parse_args()
 
@@ -236,6 +259,9 @@ def main() -> None:
 		fp_output = open(args.output,mode="w",encoding="latin-1")
 	if args.skipports:
 		create_skipped_port_list(args.skipports)
+	if args.runtime:
+		runtime_stats = int(args.runtime)
+		runtime_stats_last_timestamp = int(time.time())
 	
 	port_list = args.ports if args.ports else default_port_list
 	ip_skiplist = ip_network(args.skipnetblock) if args.skipnetblock else []
@@ -272,7 +298,9 @@ def main() -> None:
 			if args.verbose:
 				line = "{}\tn/a\thost-excluded".format(my_ip)
 				print(line)
-				if args.output: fp_output.write("%s\n" % (line.replace("\t",",")))
+				if args.output: 
+					fp_output.write("%s\n" % (line.replace("\t",",")))
+					fp_output.flush()
 			skipped_hosts += 1
 			continue
 		try:
@@ -281,12 +309,16 @@ def main() -> None:
 			print("\nYou pressed Ctrl+C")
 			sys.exit(1)
 
-	t2 = datetime.now()
-	total =	t2 - t1
+	if runtime_stats:
+		now = int(time.time())
+		divisor = now - runtime_stats_last_timestamp
+		if not divisor: divisor=1
+		pps = (ports_scanned-runtime_stats_last_port_count) / divisor
+		print("[%s]\thosts: %s\tports: %s\tports/sec: %s" % (time.strftime("%Y-%m-%d %H:%M:%S"),hosts_scanned,ports_scanned,int(pps)), file=sys.stderr)
 
 	if args.verbose:
 		print()
-		print("Scan Time    : ", total)
+		print("Scan Time    : ", datetime.now() - t1)
 		print("Active Hosts : ", len(active_hosts))
 		print("Hosts Scanned: ", hosts_scanned)
 		print("Skipped Hosts: ", skipped_hosts)
