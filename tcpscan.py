@@ -20,8 +20,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.12"
-pgm_date = "Aug-16-2016 13:42"
+pgm_version = "1.13"
+pgm_date = "Sep-12-2016 17:45"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -250,7 +250,9 @@ def main() -> None:
 	parser.add_argument("-r", "--runtime", help="periodically display runtime stats every X seconds to STDERR")
 
 	args = parser.parse_args()
-
+	
+	if "." == args.target:
+		args.target = "127.0.0.1"
 	if args.threads:
 		max_workers = int(args.threads)
 	if args.timeout:
