@@ -34,11 +34,11 @@
 - https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-centos-7
 - yum install nginx
 - edit: /etc/nginx/nginx.conf
-- within the servver{} stanza add the following:
+- within the server{} stanza add the following:
 
 ```
 location /parse/ {
-proxy_pass http://127.0.0.1:1337;
+    proxy_pass http://127.0.0.1:1337;
 }
 ```
 
