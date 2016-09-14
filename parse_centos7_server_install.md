@@ -71,6 +71,14 @@ location /parse/ {
 ## Install Parse Server and PM2 Globally
 
 - npm install -g parse-server pm2 (this creates 11,244 files under /usr/lib/node_modules/ and also creates /usr/bin/pm2 and /usr/bin/parse-server)
+- npm install -g mongodb-runner (I believe this may *somewhat* functionaly equivalent to pm2)
+
+## Run Parse Server
+
+- See also: https://stackoverflow.com/questions/23948527/13-permission-denied-while-connecting-to-upstreamnginx
+- parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
+- You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
+
 
 
 
