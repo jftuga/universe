@@ -110,5 +110,26 @@ APPID="appid123456"
 curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/json" http://localhost:1337/parse/classes/testerdb
 ```
 
+- as the parseguy user:
 
+```
+[parseguy@staging1 ~]$ ./start_parse_server.sh
+appId: appid123456
+masterKey: ***REDACTED***
+port: 1337
+databaseURI: mongodb://127.0.0.1:27017/testerdb?ssl=false
+mountPath: /parse
+maxUploadSize: 20mb
+verbose: true
+serverURL: http://localhost:1337/parse
 
+[3262] parse-server running on http://localhost:1337/parse
+
+```
+
+```
+[parseguy@staging1 ~]$ ./write_to_local_parse_server.sh
+{"objectId":"zMeGUR5NMr","createdAt":"2016-09-14T00:29:45.249Z"}
+[parseguy@staging1 ~]$ ./read_from_local_parse_server.sh
+{"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
+```
