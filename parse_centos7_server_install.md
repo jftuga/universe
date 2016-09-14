@@ -133,3 +133,11 @@ serverURL: http://localhost:1337/parse
 [parseguy@staging1 ~]$ ./read_from_local_parse_server.sh
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
+
+## Todo
+
+- https encryption
+- example from remote host through nginx
+- import parse.com data
+- use pm2 so that the parse-server starts up when the server is rebooted
+- iOS examples
