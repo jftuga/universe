@@ -89,12 +89,26 @@ location /parse/ {
 APPID="appid123456"
 MASTERKEY="masterkey654321"
 DBURI="mongodb://127.0.0.1:27017/testerdb?ssl=false"
-
 parse-server --verbose --appId ${APPID} --masterKey ${MASTERKEY} --databaseURI ${DBURI}
 ```
 
+- write_to_local_parse_server.sh
 
-- As the *parseguy* user:
-- 
+```bash
+#!/bin/bash
+
+APPID="appid123456"
+curl -X POST -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/json" -d '{"age":43,"name":"John","location":"Athens"}' http://localhost:1337/parse/classes/testerdb
+```
+
+- read_from_local_parse.sh
+
+```bash
+#!/bin/bash
+
+APPID="appid123456"
+curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/json" http://localhost:1337/parse/classes/testerdb
+```
+
 
 
