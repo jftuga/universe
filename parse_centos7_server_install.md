@@ -134,6 +134,45 @@ serverURL: http://localhost:1337/parse
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
 
+## iOS Examples
+
+```objc
+// ViewController.m
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view, typically from a nib.
+    [Parse initializeWithConfiguration:[ParseClientConfiguration configurationWithBlock:^(id<ParseMutableClientConfiguration> configuration) {
+        configuration.applicationId = @"appid123456";
+        configuration.clientKey = @"";
+        configuration.server = @"http://192.168.27/parse/";
+    }]];
+    
+    PFQuery *query = [PFQuery queryWithClassName:@"testerdb"];
+    // to return a sungle entity...
+    //[query whereKey:@"name" equalTo:@"John"];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if (!error) {
+            // The find succeeded.
+            NSLog(@"Successfully retrieved %ld contacts.", objects.count);
+            NSLog(@"========================================================");
+            // Do something with the found objects
+            for (PFObject *object in objects) {
+                NSLog(@"object: %@", object.objectId);
+                NSLog(@"web   : %@", object[@"contactWeb"]);
+                NSLog(@"phone : %@", object[@"contactPhone"]);
+                NSLog(@"---------------------------");
+            }
+        } else {
+            // Log details of the failure
+            NSLog(@"Error: %@ %@", error, [error userInfo]);
+        }
+    }];
+    
+}
+
+```
+
+
 ## Todo
 
 - https encryption
