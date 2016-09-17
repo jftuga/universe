@@ -20,8 +20,8 @@ from datetime import datetime
 from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.13"
-pgm_date = "Sep-12-2016 17:45"
+pgm_version = "1.14"
+pgm_date = "Sep-17-2016 08:37"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -247,7 +247,8 @@ def main() -> None:
 	parser.add_argument("-o", "--output", help="output to CSV file")
 	parser.add_argument("-d", "--dns", help="revolve IPs to dns names", action="store_true")
 	parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
-	parser.add_argument("-r", "--runtime", help="periodically display runtime stats every X seconds to STDERR")
+	parser.add_argument("-r", "--runtime", help="periodically display runtime stats every RUNTIME seconds to STDERR")
+	parser.add_argument("-l", "--loop", help="repeat the port scan LOOP times, -1 for continuous")
 
 	args = parser.parse_args()
 	
@@ -264,6 +265,10 @@ def main() -> None:
 	if args.runtime:
 		runtime_stats = int(args.runtime)
 		runtime_stats_last_timestamp = int(time.time())
+
+	loop_seconds = int(args.loop) if args.loop else 0
+	if -1 == loop_seconds:
+			loop_seconds = int(sys.maxsize) - 1
 	
 	port_list = args.ports if args.ports else default_port_list
 	ip_skiplist = ip_network(args.skipnetblock) if args.skipnetblock else []
@@ -294,22 +299,32 @@ def main() -> None:
 		resolve_dns = True
 
 	t1 = datetime.now()
-	for tmp in hosts:
-		my_ip = "%s" % (tmp)
-		if tmp in ip_skiplist:
-			if args.verbose:
-				line = "{}\tn/a\thost-excluded".format(my_ip)
-				print(line)
-				if args.output: 
-					fp_output.write("%s\n" % (line.replace("\t",",")))
-					fp_output.flush()
-			skipped_hosts += 1
-			continue
-		try:
-			scan_one_host( "%s" % (my_ip), port_list )
-		except KeyboardInterrupt:
-			print("\nYou pressed Ctrl+C")
-			sys.exit(1)
+	for loop in range(0,loop_seconds+1):
+		for tmp in hosts:
+			my_ip = "%s" % (tmp)
+			if tmp in ip_skiplist:
+				if args.verbose:
+					line = "{}\tn/a\thost-excluded".format(my_ip)
+					print(line)
+					if args.output: 
+						fp_output.write("%s\n" % (line.replace("\t",",")))
+						fp_output.flush()
+				skipped_hosts += 1
+				continue
+			try:
+				scan_one_host( "%s" % (my_ip), port_list )
+			except KeyboardInterrupt:
+				print("\nYou pressed Ctrl+C")
+				break
+
+		if loop_seconds:
+			try:
+				print("[%s] completed loops:%s" % (time.strftime("%Y-%m-%d %H:%M:%S"), loop+1))
+				print()
+				time.sleep(0.70)
+			except KeyboardInterrupt:
+				print("\nYou pressed Ctrl+C")
+				break
 
 	if runtime_stats:
 		now = int(time.time())
@@ -320,13 +335,14 @@ def main() -> None:
 
 	if args.verbose:
 		print()
-		print("Scan Time    : ", datetime.now() - t1)
-		print("Active Hosts : ", len(active_hosts))
-		print("Hosts Scanned: ", hosts_scanned)
-		print("Skipped Hosts: ", skipped_hosts)
-		print("Opened Ports : ", opened_ports)
-		print("Skipped Ports: ", skipped_ports)
-		print("Ports Scanned: ", ports_scanned)
+		print("Scan Time      : ", datetime.now() - t1)
+		print("Active Hosts   : ", len(active_hosts))
+		print("Hosts Scanned  : ", hosts_scanned)
+		print("Skipped Hosts  : ", skipped_hosts)
+		print("Opened Ports   : ", opened_ports)
+		print("Skipped Ports  : ", skipped_ports)
+		print("Ports Scanned  : ", ports_scanned)
+		print("Completed Loops: ", loop+1)
 		print()
 	else:
 		if not opened_ports:
