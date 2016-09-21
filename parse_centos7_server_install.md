@@ -52,6 +52,13 @@ location /parse-dashboard/ {
 - firewall-cmd --permanent --zone=public --add-service=https
 - firewall-cmd --reload
 - systemctl enable nginx  (start nginix when system boots)
+-
+- To allow nginx to connect to the prox_pass services:
+- http://stackoverflow.com/a/31403848/452281
+- setsebool httpd_can_network_connect on
+- setsebool httpd_can_network_connect on -P (persist across reboots)
+- getsebool -a | grep httpd | grep on$ (to verify these changes)
+
 
 ## Install MongoDB
 
@@ -186,15 +193,16 @@ serverURL: http://localhost:1337/parse
 
 ## Parse Dashboard
 
+- https://github.com/ParsePlatform/parse-dashboard
 - As root edit: /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
 
 ```json
 {
   "apps": [{
-    "serverURL": "http://localhost:1337/parse/classes/testerdb",
+    "serverURL": "http://localhost:1337/parse",
     "appId": "appid123456",
     "masterKey": "masterkey654321",
-    "appName": "TesterDB App",
+    "appName": "TesterDB",
     "iconName": ""
   }],
   "iconsFolder": "icons"
@@ -202,6 +210,8 @@ serverURL: http://localhost:1337/parse
 ```
 
 - The run as the parseguy user:  parse-dashboard --config /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
+- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
+- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
 
 ## Todo
 
