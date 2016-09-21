@@ -69,7 +69,7 @@ location /parse/ {
 - ./setup_6.x   (this creates a file: /etc/yum.repos.d/nodesource-el.repo)
 - yum install nodejs
 
-## Install Parse Server and PM2 Globally
+## Global Install of Parse Server, Parse Dashboard, PM2
 
 - npm install -g parse-server pm2 (this creates 11,244 files under /usr/lib/node_modules/ and also creates /usr/bin/pm2 and /usr/bin/parse-server)
 - npm install -g mongodb-runner (I believe this may *somewhat* functionaly equivalent to pm2)
@@ -173,6 +173,31 @@ serverURL: http://localhost:1337/parse
 
 ```
 
+
+## Run Parse at startup
+
+- http://pm2.keymetrics.io/docs/usage/startup/
+- sudo pm2 startup centos -u parseguy
+
+
+## Parse Dashboard
+
+- As root edit: /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
+
+```json
+{
+  "apps": [{
+    "serverURL": "http://localhost:1337/parse/classes/testerdb",
+    "appId": "appid123456",
+    "masterKey": "masterkey654321",
+    "appName": "TesterDB App",
+    "iconName": ""
+  }],
+  "iconsFolder": "icons"
+}
+```
+
+- The run as the parseguy user:  parse-dashboard --config /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
 
 ## Todo
 
