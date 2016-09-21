@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-09-14
+2016-09-20
 
 ## Initial configuration
 
@@ -40,6 +40,10 @@
 ```
 location /parse/ {
     proxy_pass http://127.0.0.1:1337;
+}
+
+location /parse-dashboard/ {
+	proxy_pass http://127.0.0.1:4040;
 }
 ```
 
