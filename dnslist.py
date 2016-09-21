@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 import sys, socket
 
@@ -17,9 +18,19 @@ def main():
     for hostname in sorted(lines):
         lower_hostname = hostname.lower()
         try:
-            ip = socket.gethostbyname(lower_hostname)
+            if lower_hostname[0].isdigit() and lower_hostname[1].isdigit():
+                addr=1
+                ip = socket.gethostbyaddr(lower_hostname)
+            else:
+                addr=0
+                ip = socket.gethostbyname(lower_hostname)
         except:
-            ip = "(falied)"
-        print("%s\t%s" % (lower_hostname, ip))
+            print("%s\tfailed" % (lower_hostname))
+        else:
+            if 0 == addr:
+                print("%s\t%s" % (lower_hostname,ip))
+            else:
+                print("%s\t%s" % (lower_hostname,ip[0]))
 
-main()
+if "__main__" == __name__:
+    main()
