@@ -50,7 +50,7 @@ location /parse-dashboard/ {
 - systemctl start nginx
 - firewall-cmd --permanent --zone=public --add-service=http 
 - firewall-cmd --permanent --zone=public --add-service=https
-- firewall-cmd --zone=public --add-port=4040/tcp **don't do this in production, this is only to directly access the dashboard; also append --allowInsecureHTTP to the 'parse-dashboard' command below**
+- firewall-cmd --zone=public --add-port=4040/tcp **don't do this in production, this is only to directly access the dashboard; also append --allowInsecureHTTP=1 to the 'parse-dashboard' command below**
 - firewall-cmd --reload
 - systemctl enable nginx  (start nginix when system boots)
 -
@@ -149,7 +149,7 @@ serverURL: http://localhost:1337/parse
 
 - verify you can access the parse server from a remote host.
 
-```
+```bash
 #!/bin/bash
 
 SERVER=192.168.1.27
