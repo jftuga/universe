@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-09-20
+2016-09-23
 
 ## Initial configuration
 
@@ -50,6 +50,7 @@ location /parse-dashboard/ {
 - systemctl start nginx
 - firewall-cmd --permanent --zone=public --add-service=http 
 - firewall-cmd --permanent --zone=public --add-service=https
+- firewall-cmd --zone=public --add-port=4040/tcp **don't do this in production, this is only to directly access the dashboard; also append --allowInsecureHTTP to the 'parse-dashboard' command below**
 - firewall-cmd --reload
 - systemctl enable nginx  (start nginix when system boots)
 -
@@ -145,6 +146,24 @@ serverURL: http://localhost:1337/parse
 [parseguy@staging1 ~]$ ./read_from_local_parse_server.sh
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
+
+- verify you can access the parse server from a remote host.
+
+```
+#!/bin/bash
+
+SERVER=192.168.1.27
+APPID=appid123456
+curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/json" http://${SERVER}/parse/classes/testerdb
+```
+
+- The above command should return something like:
+
+```json
+{"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
+```
+
+
 
 ## iOS Examples
 
