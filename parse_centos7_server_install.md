@@ -189,7 +189,6 @@ Podfile:
 target 'parse-objc' do
     pod 'Parse'
 end
-
 */
 
 // ViewController.m
@@ -256,6 +255,8 @@ end
   "iconsFolder": "icons"
 }
 ```
+- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
+- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 
 - start_dashboard.sh
 
@@ -269,8 +270,9 @@ parse-dashboard --config ${DASH} --allowInsecureHTTP=1 **(allowInsecureHTTP is o
 
 ```
 
-- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
-- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+- Note that ./start_parse_server.sh should already be running at this point
+- Now run ./start_dashboard.sh
+
 
 ## Todo
 
