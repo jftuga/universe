@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-09-23
+2016-09-25
 
 ## Initial configuration
 
@@ -163,7 +163,7 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
 
-- verify you can remotely submit new data to the server
+- verify you can remotely submit new data to the server:
 
 ```bash
 #!/bin/bash
@@ -228,12 +228,13 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 ## Parse Dashboard
 
 - https://github.com/ParsePlatform/parse-dashboard
-- As root edit: /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
+- As root edit: /lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+- Note the *serverURL* will be used by the browser and therefore should use an IP address that is externally accessible
 
 ```json
 {
   "apps": [{
-    "serverURL": "http://localhost:1337/parse",
+    "serverURL": "http://192.168.1.27:1337/parse",
     "appId": "appid123456",
     "masterKey": "masterkey654321",
     "appName": "TesterDB",
@@ -243,14 +244,23 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 }
 ```
 
-- The run as the parseguy user:  parse-dashboard --config /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
+- start_dashboard.sh
+
+```bash
+#!/bin/bash
+
+export DASH=/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+export DEBUG="express:*" # **(optional)**
+
+parse-dashboard --config ${DASH} --allowInsecureHTTP=1 **(allowInsecureHTTP is only for initial install,testing)**
+
+```
+
 - cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
-- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
+- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 
 ## Todo
 
 - https encryption
-- example from remote host through nginx
 - import parse.com data
 - use pm2 so that the parse-server starts up when the server is rebooted
-- iOS examples
