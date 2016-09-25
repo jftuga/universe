@@ -84,7 +84,7 @@ location /parse-dashboard/ {
 ## Global Install of Parse Server, Parse Dashboard, PM2
 
 - npm install -g parse-server pm2 (this creates 11,244 files under /usr/lib/node_modules/ and also creates /usr/bin/pm2 and /usr/bin/parse-server)
-- npm install -g mongodb-runner (I believe this may *somewhat* functionaly equivalent to pm2)
+- npm install -g mongodb-runner
 
 ## Parse Server Basics
 
@@ -183,7 +183,20 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 ## iOS Examples
 
 ```objc
+/*
+Podfile:
+
+target 'parse-objc' do
+    pod 'Parse'
+end
+
+*/
+
 // ViewController.m
+
+#import "ViewController.h"
+#import "Parse.h"
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
