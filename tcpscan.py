@@ -14,20 +14,22 @@ import sys
 import socket
 import argparse
 import time
+import ipaddress
 import concurrent.futures
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import ip_network
 from random import shuffle
 
-pgm_version = "1.14"
-pgm_date = "Sep-17-2016 08:37"
+pgm_version = "1.15"
+pgm_date = "Sep-28-2016 10:21"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
 
 # default connect timeout when checking a port, changed with -t
-connect_timeout = 0.07
+connect_timeout_lan = 0.07
+connect_timeout_wan = 0.18
+connect_timeout = 0
 
 # list of ports to scan if -p is not given on the command line
 default_port_list = "20,21,22,23,25,47,53,69,80,110,113,123,135,137,138,139,143,161,179,194,201,311,389,427,443,445,465,500,513,514,515,530,548,554,563,587,593,601,631,636,660,674,691,694,749,751,843,873,901,902,903,987,990,992,993,994,995,1000,1167,1234,1433,1434,1521,1528,1723,1812,1813,2000,2049,2375,2376,2077,2078,2082,2083,2086,2087,2095,2096,2222,2433,2483,2484,2638,3000,3260,3283,3306,3389,3478,3690,4000,5000,5432,5433,6000,6667,7000,8000,8080,8443,8880,8888,9000,9001,9418,9998,27017,27018,27019,28017,32400"
@@ -49,6 +51,22 @@ resolve_dns = 0
 
 #############################################################################################
 
+def is_ip_on_lan(ip:str) -> bool:
+	"""Return true when the given IP is in a IANA IPv4 private range, otherwise false
+
+	Args:
+		ip An IPv4 address in dotted-quad notation.
+
+	Returns:
+		true or false depending on the value of ip
+
+	Raises:
+		Does not raise any errors.
+	"""
+	return ipaddress.IPv4Address(ip).is_private
+
+#############################################################################################
+
 def scan_one_host(ip: str, ports: str) -> None:
 	"""Scan a host for the given open ports.
 	
@@ -66,6 +84,7 @@ def scan_one_host(ip: str, ports: str) -> None:
 	"""
 
 	global args, max_workers, connect_timeout, hosts_scanned
+	global connect_timeout_lan, connect_timeout_wan
 
 	if ports.find("-") > -1 and ports.find(",") > -1:
 		print("\nError: For -p option, port list cannot contain both a port range and list of ports\n")
@@ -87,7 +106,11 @@ def scan_one_host(ip: str, ports: str) -> None:
 	else:
 		# comma separated list of ports, can also include a single port
 		port_list = ports.split(",")
-		
+
+	# set the timeout based on lan or wan
+	if not connect_timeout:
+		connect_timeout = connect_timeout_lan if is_ip_on_lan(ip) else connect_timeout_wan
+
 	if args.shuffleports: shuffle(port_list)
 	with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
 		alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
@@ -113,7 +136,7 @@ def scan_one_port(ip: str, port:str) -> bool:
 	"""
 
 	global args, fp_output, active_hosts, opened_ports, ports_scanned
-	global max_workers, connect_timeout, skipped_port_list, skipped_ports, resolve_dns
+	global max_workers, connect_timeout_lan, connect_timeout_wan, skipped_port_list, skipped_ports, resolve_dns
 	global runtime_stats, runtime_stats_last_timestamp, runtime_stats_last_port_count
 
 	port = int(port)
@@ -230,7 +253,7 @@ def main() -> None:
 	"""
 
 	global args, fp_output, default_port_list
-	global max_workers, connect_timeout
+	global max_workers, connect_timeout, connect_timeout_lan, connect_timeout_wan
 	global skipped_hosts, skipped_ports, hosts_scanned
 	global resolve_dns, runtime_stats, runtime_stats_last_timestamp
 
@@ -240,7 +263,7 @@ def main() -> None:
 	parser.add_argument("-X", "--skipports", help="exclude a subset of ports, e.g. 135-139")
 	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, e.g. 22,80,443,445,515  e.g. 80-515")
 	parser.add_argument("-T", "--threads", help="number of concurrent threads, default: %s" % (max_workers))
-	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, default: %s" % (connect_timeout))
+	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, default: %s for lan, %s for wan" % (connect_timeout_lan,connect_timeout_wan))
 	parser.add_argument("-s", "--shufflehosts", help="randomize the order IPs are scanned", action="store_true")
 	parser.add_argument("-S", "--shuffleports", help="randomize the order ports are scanned", action="store_true")
 	parser.add_argument("-c", "--closed", help="output ports that are closed", action="store_true")
@@ -271,7 +294,7 @@ def main() -> None:
 			loop_seconds = int(sys.maxsize) - 1
 	
 	port_list = args.ports if args.ports else default_port_list
-	ip_skiplist = ip_network(args.skipnetblock) if args.skipnetblock else []
+	ip_skiplist = ipaddress.ip_network(args.skipnetblock) if args.skipnetblock else []
 
 	if any(c.isalpha() for c in args.target):
 		try:
@@ -282,7 +305,7 @@ def main() -> None:
 			sys.exit(1)
 	else:
 		try:
-			tmp = ip_network(args.target)
+			tmp = ipaddress.ip_network(args.target)
 		except ValueError as err:
 			print("Error:", err)
 			sys.exit(1)
@@ -299,7 +322,7 @@ def main() -> None:
 		resolve_dns = True
 
 	t1 = datetime.now()
-	for loop in range(0,loop_seconds+1):
+	for loop in range(0,loop_seconds):
 		for tmp in hosts:
 			my_ip = "%s" % (tmp)
 			if tmp in ip_skiplist:
