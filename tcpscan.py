@@ -20,8 +20,8 @@ from collections import defaultdict
 from datetime import datetime
 from random import shuffle
 
-pgm_version = "1.15"
-pgm_date = "Sep-28-2016 10:21"
+pgm_version = "1.16"
+pgm_date = "Oct-04-2016 23:58"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -271,7 +271,7 @@ def main() -> None:
 	parser.add_argument("-d", "--dns", help="revolve IPs to dns names", action="store_true")
 	parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
 	parser.add_argument("-r", "--runtime", help="periodically display runtime stats every RUNTIME seconds to STDERR")
-	parser.add_argument("-l", "--loop", help="repeat the port scan LOOP times, -1 for continuous")
+	parser.add_argument("-l", "--loop", help="repeat the port scan LOOP times, 0 for continuous")
 
 	args = parser.parse_args()
 	
@@ -289,8 +289,8 @@ def main() -> None:
 		runtime_stats = int(args.runtime)
 		runtime_stats_last_timestamp = int(time.time())
 
-	loop_seconds = int(args.loop) if args.loop else 0
-	if -1 == loop_seconds:
+	loop_seconds = int(args.loop) if args.loop else 1
+	if 0 == loop_seconds:
 			loop_seconds = int(sys.maxsize) - 1
 	
 	port_list = args.ports if args.ports else default_port_list
@@ -340,7 +340,7 @@ def main() -> None:
 				print("\nYou pressed Ctrl+C")
 				break
 
-		if loop_seconds:
+		if loop_seconds and args.loop:
 			try:
 				print("[%s] completed loops:%s" % (time.strftime("%Y-%m-%d %H:%M:%S"), loop+1))
 				print()
