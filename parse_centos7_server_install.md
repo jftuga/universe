@@ -1,10 +1,11 @@
 # Parse Install on CentOS 7
 
-2016-09-25
+2016-10-08
 
 ## Initial configuration
 
 - base system insatlled with: CentOS-7-x86_64-Minimal-1511.iso (sha1: 783eef50e1fb91c78901d0421d8114a29b998478)
+- To perform a full system update, run this as root: yum update  (may need to reboot afterwards)
 - edit: /etc/hostname /etc/hosts /etc/sysconfig/network
 - adduser parseguy
 - passwd parseguy
@@ -14,14 +15,15 @@
 
 ## Install via Yum
 
+- to what packages are currently installed: yum list installed *or* yum list installed | grep whatever
 - yum install screen
 - yum install wget
 - yum install net-tools
 - yum install vim-enhanced
 - yum install git
 - yum install policycoreutils-python   (this is for semanage, which is needed for mongodb server configuration)
-- yum groupinstall 'Development Tools' (optional)
-- yum install telnet (optional)
+- yum groupinstall 'Development Tools' (optional, to build native nodejs addons)
+- yum install telnet (optional, to verify open ports and send raw commands)
 
 ## Install via EPEL
 
@@ -147,7 +149,7 @@ serverURL: http://localhost:1337/parse
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
 
-- verify you can access the parse server from a remote host.
+- verify you can access the parse server from a remote host, read_from_remote_parse.sh
 
 ```bash
 #!/bin/bash
@@ -163,7 +165,7 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
 
-- verify you can remotely submit new data to the server:
+- verify you can remotely submit new data to the server, readwrite_remote_parse.sh
 
 ```bash
 #!/bin/bash
@@ -240,7 +242,8 @@ end
 ## Parse Dashboard
 
 - https://github.com/ParsePlatform/parse-dashboard
-- As root edit: /lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+- npm install -g parse-dashboard
+- As root edit: /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
 - Note the *serverURL* will be used by the browser and therefore should use an IP address that is externally accessible
 
 ```json
@@ -255,15 +258,16 @@ end
   "iconsFolder": "icons"
 }
 ```
-- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
-- cd /usr/share/nginx/html/ && ln -s /lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+- cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
+- cd /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/ && ln -s ../parse-dashboard-config.json
+- cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 
-- start_dashboard.sh
+- start_dashboard.sh:
 
 ```bash
 #!/bin/bash
 
-export DASH=/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+export DASH=/usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 export DEBUG="express:*" # **(optional)**
 
 parse-dashboard --config ${DASH} --allowInsecureHTTP=1 **(allowInsecureHTTP is only for initial install,testing)**
@@ -272,6 +276,16 @@ parse-dashboard --config ${DASH} --allowInsecureHTTP=1 **(allowInsecureHTTP is o
 
 - Note that ./start_parse_server.sh should already be running at this point
 - Now run ./start_dashboard.sh
+
+## Export your data from parse.com
+
+- https://www.parse.com/login
+- Use the "new" parse dashboard
+- click on your app (on the right side)
+- click on app settings -> general (on the left side)
+- export data (an email will be sent to you with a download link)
+
+
 
 
 ## Todo
