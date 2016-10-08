@@ -53,7 +53,9 @@ location /parse-dashboard/ {
 - firewall-cmd --permanent --zone=public --add-service=http 
 - firewall-cmd --permanent --zone=public --add-service=https
 - firewall-cmd --zone=public --add-port=4040/tcp **don't do this in production, this is only to directly access the dashboard; also append --allowInsecureHTTP=1 to the 'parse-dashboard' command below**
+- semanage port -a -t http_port_t -p tcp 4040 **don't do this in production**
 - firewall-cmd --reload
+- firewall-cmd --zone=public --list-all (to view all open ports)
 - systemctl enable nginx  (start nginix when system boots)
 
 - To allow nginx to connect to the prox_pass services:
