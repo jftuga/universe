@@ -12,6 +12,7 @@ For help, run: tcpscan.py -h
 
 import sys
 import socket
+import socketserver
 import argparse
 import time
 import ipaddress
@@ -20,8 +21,8 @@ from collections import defaultdict
 from datetime import datetime
 from random import shuffle
 
-pgm_version = "1.16"
-pgm_date = "Oct-04-2016 23:58"
+pgm_version = "1.17beta"
+pgm_date = "Oct-09-2016 08:33"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -239,6 +240,33 @@ def create_skipped_port_list(ports:str) -> None:
 
 #############################################################################################
 
+def tcp_connect_handler(sock:socket.socket, remote:list, server:socketserver.TCPServer):
+	now = time.strftime("%Y-%m-%d %H:%M:%S")
+	print("[%s] Incoming connection on %s:%s from %s:%s" % (now,sock.getsockname()[0],sock.getsockname()[1],remote[0],remote[1]))
+	sock.shutdown(socket.SHUT_RDWR)
+	sock.close()
+
+#############################################################################################
+
+def tcp_listen(port:int) -> None:
+	host = "0.0.0.0"
+
+	print("Listening for incoming TCP connections on %s:%s" % (host,port))
+	server = socketserver.TCPServer((host, port), tcp_connect_handler)
+	server.serve_forever()
+
+#############################################################################################
+
+def tcp_listen_setup(ports:str) -> None:
+	port_list = ports.split(",")
+
+	with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+		alpha = {executor.submit(tcp_listen, int(current_port)): current_port for current_port in port_list}
+		for future in concurrent.futures.as_completed(alpha):
+			pass
+
+#############################################################################################
+
 def main() -> None:
 	"""Process command-line arguments, scan hosts/ports, print results.
 	
@@ -272,8 +300,14 @@ def main() -> None:
 	parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
 	parser.add_argument("-r", "--runtime", help="periodically display runtime stats every RUNTIME seconds to STDERR")
 	parser.add_argument("-l", "--loop", help="repeat the port scan LOOP times, 0 for continuous")
+	parser.add_argument("-L", "--listen", help="(mutually exclusive) listen on given TCP port for an incoming connection", action="store_true")
+
 
 	args = parser.parse_args()
+
+	if args.listen:
+		tcp_listen_setup(args.target)
+		return
 	
 	if "." == args.target:
 		args.target = "127.0.0.1"
