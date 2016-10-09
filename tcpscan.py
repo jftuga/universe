@@ -21,8 +21,8 @@ from collections import defaultdict
 from datetime import datetime
 from random import shuffle
 
-pgm_version = "1.17beta"
-pgm_date = "Oct-09-2016 08:33"
+pgm_version = "1.18beta"
+pgm_date = "Oct-09-2016 15:19"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -68,6 +68,27 @@ def is_ip_on_lan(ip:str) -> bool:
 
 #############################################################################################
 
+def get_port_list(ports:str) -> list:
+	if ports.find("-") > 0 and ports.find(",") == -1:
+		# hypen delimited range of ports
+		start, end = ports.split("-")
+		start = int(start)
+		end = int(end)
+		if end < start:
+			print("\nError: For -p option, ending port is less than starting port\n")
+			sys.exit(1)
+		if end > 65535:
+			print("\nError: For -p option, ending port is greater than 65535\n")
+			sys.exit(1)
+		port_list = list(range(start,end+1))
+	else:
+		# comma separated list of ports, can also include a single port
+		port_list = ports.split(",")
+
+	return port_list
+
+#############################################################################################
+
 def scan_one_host(ip: str, ports: str) -> None:
 	"""Scan a host for the given open ports.
 	
@@ -92,21 +113,7 @@ def scan_one_host(ip: str, ports: str) -> None:
 		sys.exit(1)
 
 	hosts_scanned += 1
-	if ports.find("-") > 0 and ports.find(",") == -1:
-		# hypen delimited range of ports
-		start, end = ports.split("-")
-		start = int(start)
-		end = int(end)
-		if end < start:
-			print("\nError: For -p option, ending port is less than starting port\n")
-			sys.exit(1)
-		if end > 65535:
-			print("\nError: For -p option, ending port is greater than 65535\n")
-			sys.exit(1)
-		port_list = list(range(start,end+1))
-	else:
-		# comma separated list of ports, can also include a single port
-		port_list = ports.split(",")
+	port_list = get_port_list(ports)
 
 	# set the timeout based on lan or wan
 	if not connect_timeout:
@@ -243,7 +250,7 @@ def create_skipped_port_list(ports:str) -> None:
 def tcp_connect_handler(sock:socket.socket, remote:list, server:socketserver.TCPServer):
 	now = time.strftime("%Y-%m-%d %H:%M:%S")
 	print("[%s] Incoming connection on %s:%s from %s:%s" % (now,sock.getsockname()[0],sock.getsockname()[1],remote[0],remote[1]))
-	sock.shutdown(socket.SHUT_RDWR)
+	#sock.shutdown(socket.SHUT_RDWR)
 	sock.close()
 
 #############################################################################################
@@ -258,7 +265,8 @@ def tcp_listen(port:int) -> None:
 #############################################################################################
 
 def tcp_listen_setup(ports:str) -> None:
-	port_list = ports.split(",")
+	port_list = get_port_list(ports)
+	print("dbg: %s", port_list)
 
 	with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
 		alpha = {executor.submit(tcp_listen, int(current_port)): current_port for current_port in port_list}
@@ -300,14 +308,19 @@ def main() -> None:
 	parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
 	parser.add_argument("-r", "--runtime", help="periodically display runtime stats every RUNTIME seconds to STDERR")
 	parser.add_argument("-l", "--loop", help="repeat the port scan LOOP times, 0 for continuous")
-	parser.add_argument("-L", "--listen", help="(mutually exclusive) listen on given TCP port for an incoming connection", action="store_true")
+	parser.add_argument("-L", "--listen", help="listen on given TCP port(s) for incoming connection(s) [mutually exclusive]", action="store_true")
 
 
 	args = parser.parse_args()
 
 	if args.listen:
-		tcp_listen_setup(args.target)
-		return
+		try:
+			tcp_listen_setup(args.target)
+		except:
+			print("Done")
+			sys.exit(0)
+		finally:
+			sys.exit(0)
 	
 	if "." == args.target:
 		args.target = "127.0.0.1"
