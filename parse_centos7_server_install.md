@@ -57,6 +57,7 @@ location /apps/ {
 - semanage port -a -t http_port_t -p tcp 4040 **don't do this in production**
 - firewall-cmd --reload
 - firewall-cmd --zone=public --list-all (to view all open ports)
+- iptables -S (to view all firewall rules)
 - systemctl enable nginx  (start nginix when system boots)
 
 - To allow nginx to connect to the prox_pass services:
@@ -273,7 +274,7 @@ end
 export DASH=/usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 export DEBUG="express:*" # **(optional)**
 
-parse-dashboard --config ${DASH} --allowInsecureHTTP=1 --port 4040 **(allowInsecureHTTP is only for initial install,testing)**
+parse-dashboard --config ${DASH} --allowInsecureHTTP=1 --port 4040 # (allowInsecureHTTP is only for initial install,testing)
 
 ```
 
