@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-08
+2016-10-11
 
 ## Initial configuration
 
@@ -44,7 +44,8 @@ location /parse/ {
     proxy_pass http://127.0.0.1:1337;
 }
 
-location /parse-dashboard/ {
+# for the parse dashboard...
+location /apps/ {
 	proxy_pass http://127.0.0.1:4040;
 }
 ```
@@ -272,7 +273,7 @@ end
 export DASH=/usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 export DEBUG="express:*" # **(optional)**
 
-parse-dashboard --config ${DASH} --allowInsecureHTTP=1 **(allowInsecureHTTP is only for initial install,testing)**
+parse-dashboard --config ${DASH} --allowInsecureHTTP=1 --port 4040 **(allowInsecureHTTP is only for initial install,testing)**
 
 ```
 
