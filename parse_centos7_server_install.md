@@ -259,9 +259,47 @@ end
     "appName": "TesterDB",
     "iconName": ""
   }],
-  "iconsFolder": "icons"
+  "iconsFolder": "icons",
+  "users": [
+    {
+       "user":"tom",
+       "pass":"change me (see below)"
+    },
+    {
+       "user":"jerry",
+       "pass":"change me (see below)"
+    }
+  ],
+  "useEncryptedPasswords": true
 }
 ```
+
+- to use encrypted passwords:
+- yum install python-pip
+- yum insatll python-devel
+- yum install libffi-devel
+- yum groupinstall 'Development Tools'
+- pip install bcrypt
+- generate passwords with this Python script and insert into the JSON file above
+
+```python
+#!/usr/bin/env python2.7
+
+import getpass
+import bcrypt
+
+a = getpass.getpass(" Enter password: ")
+b = getpass.getpass("Verify password: ")
+
+if a != b:
+        print("Passwords do no match!")
+else:
+        rounds = 15
+        print( bcrypt.hashpw(a, bcrypt.gensalt(rounds)) )
+```
+
+
+- Continuing on with theParse Dashboard installation...
 - cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
 - cd /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/ && ln -s ../parse-dashboard-config.json
 - cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
