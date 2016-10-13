@@ -191,56 +191,6 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 ```
 
 
-## iOS Examples
-
-```objc
-/*
-Podfile:
-
-target 'parse-objc' do
-    pod 'Parse'
-end
-*/
-
-// ViewController.m
-
-#import "ViewController.h"
-#import "Parse.h"
-
-- (void)viewDidLoad {
-    [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
-    [Parse initializeWithConfiguration:[ParseClientConfiguration configurationWithBlock:^(id<ParseMutableClientConfiguration> configuration) {
-        configuration.applicationId = @"appid123456";
-        configuration.clientKey = @"";
-        configuration.server = @"http://192.168.1.27/parse/";
-    }]];
-    
-    PFQuery *query = [PFQuery queryWithClassName:@"testerdb"];
-    // to return a sungle entity...
-    //[query whereKey:@"name" equalTo:@"John"];
-    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
-        if (!error) {
-            // The find succeeded.
-            NSLog(@"Successfully retrieved %ld contacts.", objects.count);
-            NSLog(@"========================================================");
-            // Do something with the found objects
-            for (PFObject *object in objects) {
-                NSLog(@"object: %@", object.objectId);
-                NSLog(@"web   : %@", object[@"contactWeb"]);
-                NSLog(@"phone : %@", object[@"contactPhone"]);
-                NSLog(@"---------------------------");
-            }
-        } else {
-            // Log details of the failure
-            NSLog(@"Error: %@ %@", error, [error userInfo]);
-        }
-    }];
-    
-}
-
-```
-
 ## Parse Dashboard
 
 - https://github.com/ParsePlatform/parse-dashboard
@@ -361,6 +311,56 @@ screen -t ParseBash /bin/bash
 - click on app settings -> general (on the left side)
 - export data (an email will be sent to you with a download link)
 
+
+## iOS Examples
+
+```objc
+/*
+Podfile:
+
+target 'parse-objc' do
+    pod 'Parse'
+end
+*/
+
+// ViewController.m
+
+#import "ViewController.h"
+#import "Parse.h"
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    // Do any additional setup after loading the view, typically from a nib.
+    [Parse initializeWithConfiguration:[ParseClientConfiguration configurationWithBlock:^(id<ParseMutableClientConfiguration> configuration) {
+        configuration.applicationId = @"appid123456";
+        configuration.clientKey = @"";
+        configuration.server = @"http://192.168.1.27/parse/";
+    }]];
+    
+    PFQuery *query = [PFQuery queryWithClassName:@"testerdb"];
+    // to return a sungle entity...
+    //[query whereKey:@"name" equalTo:@"John"];
+    [query findObjectsInBackgroundWithBlock:^(NSArray *objects, NSError *error) {
+        if (!error) {
+            // The find succeeded.
+            NSLog(@"Successfully retrieved %ld contacts.", objects.count);
+            NSLog(@"========================================================");
+            // Do something with the found objects
+            for (PFObject *object in objects) {
+                NSLog(@"object: %@", object.objectId);
+                NSLog(@"web   : %@", object[@"contactWeb"]);
+                NSLog(@"phone : %@", object[@"contactPhone"]);
+                NSLog(@"---------------------------");
+            }
+        } else {
+            // Log details of the failure
+            NSLog(@"Error: %@ %@", error, [error userInfo]);
+        }
+    }];
+    
+}
+
+```
 
 
 
