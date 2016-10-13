@@ -241,24 +241,6 @@ end
 
 ```
 
-
-## Run Parse at startup
-
-- create /home/parseguy/screen_boot.rc
-
-```bash
-startup_message off
-defscrollback 10000
-
-screen -t ParseServer /home/parseguy/start_parse_server.sh
-screen -t ParseDashboard /home/parseguy/start_dashboard.sh
-screen -t ParseBash /bin/bash
-```
-
-- run crontab -e and add the following line:
-- @reboot /bin/screen -d -m -c /home/parseguy/screen_boot.rc
-
-
 ## Parse Dashboard
 
 - https://github.com/ParsePlatform/parse-dashboard
@@ -353,6 +335,24 @@ done
 - Note that ./start_parse_server.sh should already be running at this point
 - Now run ./start_dashboard.sh
 
+
+## Run Parse and the Dashboard at system boot
+
+- create /home/parseguy/screen_boot.rc
+
+```bash
+startup_message off
+defscrollback 10000
+
+screen -t ParseServer /home/parseguy/start_parse_server.sh
+screen -t ParseDashboard /home/parseguy/start_dashboard.sh
+screen -t ParseBash /bin/bash
+```
+
+- run crontab -e and add the following line:
+- @reboot /bin/screen -d -m -c /home/parseguy/screen_boot.rc
+
+
 ## Export your data from parse.com
 
 - https://www.parse.com/login
@@ -368,4 +368,3 @@ done
 
 - https encryption
 - import parse.com data
-- use pm2 so that the parse-server starts up when the server is rebooted
