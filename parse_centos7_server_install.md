@@ -22,7 +22,6 @@
 - yum install vim-enhanced
 - yum install git
 - yum install policycoreutils-python   (this is for semanage, which is needed for mongodb server configuration)
-- yum groupinstall 'Development Tools' (optional, to build native nodejs addons)
 - yum install telnet (optional, to verify open ports and send raw commands)
 
 ## Install via EPEL
@@ -226,9 +225,10 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 - yum install python-pip
 - yum install python-devel
 - yum install libffi-devel
-- yum groupinstall 'Development Tools'
+- yum groupinstall 'Development Tools' # needed to build bcrypt module
 - pip install bcrypt
-- generate passwords with this Python script and insert into the JSON file above:
+- generate passwords with this Python script and insert into the JSON file above
+- gen_bcrypt_hash.py:
 
 ```python
 #!/usr/bin/env python2.7
