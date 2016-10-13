@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-11
+2016-10-13
 
 ## Initial configuration
 
@@ -45,7 +45,7 @@ location /parse/ {
 }
 
 # for the parse dashboard...
-location /apps/ {
+location /dashboard-for-parse/ {
 	proxy_pass http://127.0.0.1:4040;
 }
 ```
@@ -253,7 +253,7 @@ end
 ```json
 {
   "apps": [{
-    "serverURL": "http://192.168.1.27:1337/parse",
+    "serverURL": "http://192.168.1.27/parse",
     "appId": "appid123456",
     "masterKey": "masterkey654321",
     "appName": "TesterDB",
@@ -276,11 +276,11 @@ end
 
 - to use encrypted passwords:
 - yum install python-pip
-- yum insatll python-devel
+- yum install python-devel
 - yum install libffi-devel
 - yum groupinstall 'Development Tools'
 - pip install bcrypt
-- generate passwords with this Python script and insert into the JSON file above
+- generate passwords with this Python script and insert into the JSON file above:
 
 ```python
 #!/usr/bin/env python2.7
@@ -299,7 +299,7 @@ else:
 ```
 
 
-- Continuing on with theParse Dashboard installation...
+- Continuing on with the Parse Dashboard installation...
 - cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
 - cd /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/ && ln -s ../parse-dashboard-config.json
 - cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
@@ -310,9 +310,11 @@ else:
 #!/bin/bash
 
 export DASH=/usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
-export DEBUG="express:*" # **(optional)**
+export DEBUG="express:*" # (optional)
 
-parse-dashboard --config ${DASH} --allowInsecureHTTP=1 --port 4040 # (allowInsecureHTTP is only for initial install,testing)
+# (allowInsecureHTTP is only for initial install,testing)
+# NOTE: mountPath needs to be the same as nginx.conf location 
+parse-dashboard --config ${DASH} --allowInsecureHTTP=1 --port 4040 --mountPath /dashboard-for-parse 
 
 ```
 
