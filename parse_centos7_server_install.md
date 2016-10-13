@@ -87,9 +87,9 @@ location /dashboard-for-parse/ {
 - ./setup_6.x   (this creates a file: /etc/yum.repos.d/nodesource-el.repo)
 - yum install nodejs
 
-## Global Install of Parse Server, Parse Dashboard, PM2
+## Global Install of Parse Server, Parse Dashboard
 
-- npm install -g parse-server pm2 (this creates 11,244 files under /usr/lib/node_modules/ and also creates /usr/bin/pm2 and /usr/bin/parse-server)
+- npm install -g parse-server (this creates many files under /usr/lib/node_modules/ and also creates /usr/bin/parse-server)
 - npm install -g mongodb-runner
 
 ## Parse Server Basics
@@ -108,7 +108,12 @@ location /dashboard-for-parse/ {
 APPID="appid123456"
 MASTERKEY="masterkey654321"
 DBURI="mongodb://127.0.0.1:27017/testerdb?ssl=false"
-parse-server --verbose --appId ${APPID} --masterKey ${MASTERKEY} --databaseURI ${DBURI}
+
+while [ 1 ] ; do
+        parse-server --verbose --appId ${APPID} --masterKey ${MASTERKEY} --databaseURI ${DBURI}
+        echo "will restart parse-server in 7 seconds..."
+        sleep 7
+done
 ```
 
 - write_to_local_parse_server.sh
@@ -239,8 +244,19 @@ end
 
 ## Run Parse at startup
 
-- http://pm2.keymetrics.io/docs/usage/startup/
-- sudo pm2 startup centos -u parseguy
+- create /home/parseguy/screen_boot.rc
+
+```bash
+startup_message off
+defscrollback 10000
+
+screen -t ParseServer /home/parseguy/start_parse_server.sh
+screen -t ParseDashboard /home/parseguy/start_dashboard.sh
+screen -t ParseBash /bin/bash
+```
+
+- run crontab -e and add the following line:
+- @reboot /bin/screen -d -m -c /home/parseguy/screen_boot.rc
 
 
 ## Parse Dashboard
@@ -312,10 +328,26 @@ else:
 export DASH=/usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 export DEBUG="express:*" # (optional)
 
-# (allowInsecureHTTP is only for initial install,testing)
+# (--allowInsecureHTTP=1 is only for initial install and testing)
 # NOTE: mountPath needs to be the same as nginx.conf location 
-parse-dashboard --config ${DASH} --allowInsecureHTTP=1 --port 4040 --mountPath /dashboard-for-parse 
+while [ 1 ] ; do
+        while [ 1 ] ; do
+                echo "`date`: waiting for parse server to start..."
+                PARSE=`netstat -a -n | egrep -c ":1337.*LISTEN"`
+                if [ "${PARSE}" == "1" ] ; then
+                        break
+                fi
+                sleep 2
+        done
 
+        echo "`date`: starting dashboard..."
+        sleep 2
+
+
+        parse-dashboard --config ${DASH} --port 4040 --mountPath /ag-parse-dashboard
+        echo "will restart parse-dashboard in 10 seconds..."
+        sleep 10
+done
 ```
 
 - Note that ./start_parse_server.sh should already be running at this point
