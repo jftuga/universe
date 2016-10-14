@@ -194,7 +194,7 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 
 - https://github.com/ParsePlatform/parse-dashboard
 - npm install -g parse-dashboard
-- As root edit: /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/parse-dashboard-config.json
+- Edit: /home/parseguy/parse-dboard-cfg.json
 - Note the *serverURL* will be used by the browser and therefore should use an IP address that is externally accessible
 
 ```json
@@ -221,7 +221,7 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 }
 ```
 
-- to use encrypted passwords:
+- to use encrypted passwords in the parse-dboard-cfg.json file:
 - yum install python-pip
 - yum install python-devel
 - yum install libffi-devel
@@ -248,16 +248,16 @@ else:
 
 
 - Continuing on with the Parse Dashboard installation...
-- cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
-- cd /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/ && ln -s ../parse-dashboard-config.json
-- cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+- #cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
+- #cd /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/ && ln -s ../parse-dashboard-config.json
+- #cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
 
 - start_dashboard.sh:
 
 ```bash
 #!/bin/bash
 
-export DASH=/usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
+export DASH=/home/parseguy/parse-dboard-cfg.json
 export DEBUG="express:*" # (optional)
 
 # (--allowInsecureHTTP=1 is only for initial install and testing)
@@ -310,6 +310,7 @@ screen -t ParseBash /bin/bash
 - click on your app (on the right side)
 - click on app settings -> general (on the left side)
 - export data (an email will be sent to you with a download link)
+- or you can also "Clone this app"
 
 
 ## iOS Examples
