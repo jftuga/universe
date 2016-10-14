@@ -246,12 +246,6 @@ else:
         print( bcrypt.hashpw(a, bcrypt.gensalt(rounds)) )
 ```
 
-
-- Continuing on with the Parse Dashboard installation...
-- #cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/bundles/
-- #cd /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/ && ln -s ../parse-dashboard-config.json
-- #cd /usr/share/nginx/html/ && ln -s /usr/lib/node_modules/parse-dashboard/Parse-Dashboard/public/parse-dashboard-config.json
-
 - start_dashboard.sh:
 
 ```bash
