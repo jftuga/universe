@@ -58,11 +58,10 @@ location /dashboard-for-parse/ {
 - iptables -S (to view all firewall rules)
 - systemctl enable nginx  (start nginix when system boots)
 
-- To allow nginx to connect to the prox_pass services:
-- http://stackoverflow.com/a/31403848/452281
+- To allow nginx to connect to the proxy_pass services: http://stackoverflow.com/a/31403848/452281
 - setsebool httpd_can_network_connect on
 - setsebool httpd_can_network_connect on -P (persist across reboots)
-- getsebool -a | grep httpd | grep on$ (to verify these changes)
+- getsebool -a | grep httpd | grep on$ # (to verify these changes)
 
 
 ## Install MongoDB
@@ -82,13 +81,12 @@ location /dashboard-for-parse/ {
 - https://github.com/nodesource/distributions#rpm
 - wget https://rpm.nodesource.com/setup_6.x && chmod 700 setup_6.x
 - verify the contents of this file and then run:
-- ./setup_6.x   (this creates a file: /etc/yum.repos.d/nodesource-el.repo)
+- ./setup_6.x   # (this creates a file: /etc/yum.repos.d/nodesource-el.repo)
 - yum install nodejs
 
 ## Global Install of Parse Server, Parse Dashboard
 
-- npm install -g parse-server (this creates many files under /usr/lib/node_modules/ and also creates /usr/bin/parse-server)
-- npm install -g mongodb-runner
+- npm install -g parse-server # (this creates many files under /usr/lib/node_modules/ and also creates /usr/bin/parse-server)
 
 ## Parse Server Basics
 
@@ -276,8 +274,8 @@ while [ 1 ] ; do
 done
 ```
 
-- Note that ./start_parse_server.sh should already be running at this point
-- Now run ./start_dashboard.sh
+- As the parseguy user, run ./start_parse_server.sh
+- Then run ./start_dashboard.sh
 
 
 ## Run Parse and the Dashboard at system boot
@@ -304,7 +302,7 @@ screen -t ParseBash /bin/bash
 - click on your app (on the right side)
 - click on app settings -> general (on the left side)
 - export data (an email will be sent to you with a download link)
-- or you can also "Clone this app"
+- or you can also use "Clone this app", but this will not clone any data, just the schema
 
 
 ## iOS Examples
