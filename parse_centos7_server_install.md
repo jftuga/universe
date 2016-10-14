@@ -9,7 +9,6 @@
 - edit: /etc/hostname /etc/hosts /etc/sysconfig/network
 - adduser parseguy
 - passwd parseguy
-- ...
 - usermod -aG wheel devops (so that the 'devops' user can use sudo)
 
 
@@ -99,7 +98,7 @@ location /dashboard-for-parse/ {
 
 ## Example Scripts
 
-- start_parse_server.sh
+- Create start_parse_server.sh
 
 ```bash
 #!/bin/bash
@@ -115,7 +114,7 @@ while [ 1 ] ; do
 done
 ```
 
-- write_to_local_parse_server.sh
+- Create write_to_local_parse_server.sh
 
 ```bash
 #!/bin/bash
@@ -124,7 +123,7 @@ APPID="appid123456"
 curl -X POST -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/json" -d '{"age":43,"name":"John","location":"Athens"}' http://localhost:1337/parse/classes/testerdb
 ```
 
-- read_from_local_parse.sh
+- Create read_from_local_parse.sh
 
 ```bash
 #!/bin/bash
@@ -157,7 +156,8 @@ serverURL: http://localhost:1337/parse
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
 
-- verify you can access the parse server from a remote host, read_from_remote_parse.sh
+- verify you can access the parse server from a remote host,
+- Create read_from_remote_parse.sh
 
 ```bash
 #!/bin/bash
@@ -173,7 +173,8 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 {"results":[{"objectId":"zMeGUR5NMr","age":43,"name":"John","location":"Athens","createdAt":"2016-09-14T00:29:45.249Z","updatedAt":"2016-09-14T00:29:45.249Z"}]}
 ```
 
-- verify you can remotely submit new data to the server, readwrite_remote_parse.sh
+- verify you can remotely submit new data to the server, 
+- Create readwrite_remote_parse.sh
 
 ```bash
 #!/bin/bash
@@ -194,8 +195,7 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 
 - https://github.com/ParsePlatform/parse-dashboard
 - npm install -g parse-dashboard
-- Edit: /home/parseguy/parse-dboard-cfg.json
-- Note the *serverURL* will be used by the browser and therefore should use an IP address that is externally accessible
+- Create: /home/parseguy/parse-dboard-cfg.json,  Note: the *serverURL* will be used by the browser and therefore should use an IP address that is externally accessible
 
 ```json
 {
@@ -228,7 +228,7 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 - yum groupinstall 'Development Tools' # needed to build bcrypt module
 - pip install bcrypt
 - generate passwords with this Python script and insert into the JSON file above
-- gen_bcrypt_hash.py:
+- Create gen_bcrypt_hash.py:
 
 ```python
 #!/usr/bin/env python2.7
@@ -246,7 +246,7 @@ else:
         print( bcrypt.hashpw(a, bcrypt.gensalt(rounds)) )
 ```
 
-- start_dashboard.sh:
+- Create start_dashboard.sh:
 
 ```bash
 #!/bin/bash
@@ -282,7 +282,7 @@ done
 
 ## Run Parse and the Dashboard at system boot
 
-- create /home/parseguy/screen_boot.rc
+- Create /home/parseguy/screen_boot.rc
 
 ```bash
 startup_message off
