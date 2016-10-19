@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-13
+2016-10-19
 
 ## Initial configuration
 
@@ -293,6 +293,26 @@ screen -t ParseBash /bin/bash
 
 - run crontab -e and add the following line:
 - @reboot /bin/screen -d -m -c /home/parseguy/screen_boot.rc
+
+
+## Install SSL Certificate for Nginix
+
+- yum install certbot
+- certbot certonly
+- follow https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-14-04
+- (making adjustments for CentOS instead of Ubuntu)
+- For the root crontab file, use: 
+- 45 2 * * * /bin/certbot renew --quiet
+- 50 2 * * * /sbin/service nginx restart
+
+
+
+## Install SSL Certificate for MongoDB
+
+- Follow this guide, "MongoDB 3.2.x SSL with Letsencrypt"
+- https://gist.github.com/leommoore/1e773a7d230ca4bbe1c2
+- Do not install the LetsEncrypt software with this method
+- Start at the "download IdenTrust DST" section
 
 
 ## Export your data from parse.com
