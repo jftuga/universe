@@ -54,7 +54,7 @@ location /dashboard-for-parse/ {
 - firewall-cmd --zone=public --add-port=4040/tcp **don't do this in production, this is only to directly access the dashboard; also append --allowInsecureHTTP=1 to the 'parse-dashboard' command below**
 - semanage port -a -t http_port_t -p tcp 4040 **don't do this in production**
 - firewall-cmd --reload
-- firewall-cmd --zone=public --list-all (to view all open ports)
+- firewall-cmd --zone=public --list-all # (to view all open ports)
 - iptables -S (to view all firewall rules)
 - systemctl enable nginx  (start nginix when system boots)
 
@@ -312,7 +312,11 @@ screen -t ParseBash /bin/bash
 - Follow this guide, "MongoDB 3.2.x SSL with Letsencrypt"
 - https://gist.github.com/leommoore/1e773a7d230ca4bbe1c2
 - Do not install the LetsEncrypt software with this method
-- Start at the "download IdenTrust DST" section
+- Instead, start at the "download IdenTrust DST" section
+- In mongod.conf, add the ssl: stanza as directed
+- In mongod.conf, comment out this line: bindIp: 127.0.0.1
+- service mongod restart
+
 
 
 ## Export your data from parse.com
