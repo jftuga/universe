@@ -309,14 +309,67 @@ screen -t ParseBash /bin/bash
 
 ## Install SSL Certificate for MongoDB
 
-- Follow this guide, "MongoDB 3.2.x SSL with Letsencrypt"
-- https://gist.github.com/leommoore/1e773a7d230ca4bbe1c2
+- Adapted from this guide, "MongoDB 3.2.x SSL with Letsencrypt": https://gist.github.com/leommoore/1e773a7d230ca4bbe1c2
 - Do not install the LetsEncrypt software with this method
 - Instead, start at the "download IdenTrust DST" section
-- In mongod.conf, add the ssl: stanza as directed
-- In mongod.conf, comment out this line: bindIp: 127.0.0.1
-- service mongod restart
+- install_mongo_ssl.sh
+```bash
+#!/bin/bash
 
+# adapted from: https://gist.github.com/leommoore/1e773a7d230ca4bbe1c2
+
+SOURCE=/etc/letsencrypt/live/parse.animatronicgopher.com
+DEST=/etc/ssl/mongodb
+
+if [ ! -e ${DEST} ] ; then
+    mkdir -m 700 ${DEST}
+    chown mongod:mongod ${DEST}
+else
+    rm -f ${DEST}/ca.* ${DEST}/mongodb.pem
+fi
+
+cat ${SOURCE}/privkey.pem ${SOURCE}/fullchain.pem > ${DEST}/mongodb.pem
+
+if [ ! -e ${DEST}/ca.crt ] ; then
+    # from: https://www.identrust.com/certificates/trustid/root-download-x3.html
+    echo "-----BEGIN CERTIFICATE-----" > ${DEST}/ca.crt
+    echo "MIIDSjCCAjKgAwIBAgIQRK+wgNajJ7qJMDmGLvhAazANBgkqhkiG9w0BAQUFADA/" >> ${DEST}/ca.crt
+    echo "MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT" >> ${DEST}/ca.crt
+    echo "DkRTVCBSb290IENBIFgzMB4XDTAwMDkzMDIxMTIxOVoXDTIxMDkzMDE0MDExNVow" >> ${DEST}/ca.crt
+    echo "PzEkMCIGA1UEChMbRGlnaXRhbCBTaWduYXR1cmUgVHJ1c3QgQ28uMRcwFQYDVQQD" >> ${DEST}/ca.crt
+    echo "Ew5EU1QgUm9vdCBDQSBYMzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB" >> ${DEST}/ca.crt
+    echo "AN+v6ZdQCINXtMxiZfaQguzH0yxrMMpb7NnDfcdAwRgUi+DoM3ZJKuM/IUmTrE4O" >> ${DEST}/ca.crt
+    echo "rz5Iy2Xu/NMhD2XSKtkyj4zl93ewEnu1lcCJo6m67XMuegwGMoOifooUMM0RoOEq" >> ${DEST}/ca.crt
+    echo "OLl5CjH9UL2AZd+3UWODyOKIYepLYYHsUmu5ouJLGiifSKOeDNoJjj4XLh7dIN9b" >> ${DEST}/ca.crt
+    echo "xiqKqy69cK3FCxolkHRyxXtqqzTWMIn/5WgTe1QLyNau7Fqckh49ZLOMxt+/yUFw" >> ${DEST}/ca.crt
+    echo "7BZy1SbsOFU5Q9D8/RhcQPGX69Wam40dutolucbY38EVAjqr2m7xPi71XAicPNaD" >> ${DEST}/ca.crt
+    echo "aeQQmxkqtilX4+U9m5/wAl0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNV" >> ${DEST}/ca.crt
+    echo "HQ8BAf8EBAMCAQYwHQYDVR0OBBYEFMSnsaR7LHH62+FLkHX/xBVghYkQMA0GCSqG" >> ${DEST}/ca.crt
+    echo "SIb3DQEBBQUAA4IBAQCjGiybFwBcqR7uKGY3Or+Dxz9LwwmglSBd49lZRNI+DT69" >> ${DEST}/ca.crt
+    echo "ikugdB/OEIKcdBodfpga3csTS7MgROSR6cz8faXbauX+5v3gTt23ADq1cEmv8uXr" >> ${DEST}/ca.crt
+    echo "AvHRAosZy5Q6XkjEGB5YGV8eAlrwDPGxrancWYaLbumR9YbK+rlmM6pZW87ipxZz" >> ${DEST}/ca.crt
+    echo "R8srzJmwN0jP41ZL9c8PDHIyh8bwRLtTcm1D9SZImlJnt1ir/md2cXjbDaJWFBM5" >> ${DEST}/ca.crt
+    echo "JDGFoqgCWjBH4d1QB7wCCZAA62RjYJsWvIjJEubSfZGL+T0yjWW06XyxV3bqxbYo" >> ${DEST}/ca.crt
+    echo "Ob8VZRzI9neWagqNdwvYkQsEjgfbKbYK7p2CNTUQ" >> ${DEST}/ca.crt
+    echo "-----END CERTIFICATE-----" >> ${DEST}/ca.crt
+
+    cat ${SOURCE}/chain.pem >> ${DEST}/ca.crt
+fi
+
+openssl x509 -in ${DEST}/ca.crt -out ${DEST}/ca.pem -outform PEM
+openssl verify -verbose -CAfile ${DEST}/ca.crt ${DEST}/mongodb.pem
+
+chown mongod:mongod ${DEST}/ca.* ${DEST}/mongodb.pem
+chmod 600 ${DEST}/ca.* ${DEST}/mongodb.pem
+
+echo
+ls -la ${DEST}
+```
+
+- service mongod restart
+- On a remote server, copy ca.pem and mongodb.pem to ${HOME}/mongodb
+- From that system, connect with:
+- mongo --ssl -sslCAFile ${HOME}/mongodb/ca.pem --sslPEMKeyFile ${HOME}/mongodb/mongodb.pem parse.example.com:27017/testerdb
 
 
 ## Export your data from parse.com
@@ -327,6 +380,7 @@ screen -t ParseBash /bin/bash
 - click on app settings -> general (on the left side)
 - export data (an email will be sent to you with a download link)
 - or you can also use "Clone this app", but this will not clone any data, just the schema
+- Example mongodb://parse.example.com:27017/testerdb?ssl=true
 
 
 ## iOS Examples
