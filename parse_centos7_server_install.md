@@ -370,6 +370,8 @@ ls -la ${DEST}
 - On a remote server, copy ca.pem and mongodb.pem to ${HOME}/mongodb
 - From that system, connect with:
 - mongo --ssl -sslCAFile ${HOME}/mongodb/ca.pem --sslPEMKeyFile ${HOME}/mongodb/mongodb.pem parse.example.com:27017/testerdb
+- or without the certs:
+- mongo -ssl "mongodb://parse.example.com:27017/testerdb"
 
 
 ## Export your data from parse.com
@@ -380,7 +382,7 @@ ls -la ${DEST}
 - click on app settings -> general (on the left side)
 - export data (an email will be sent to you with a download link)
 - or you can also use "Clone this app", but this will not clone any data, just the schema
-- Example mongodb://parse.example.com:27017/testerdb?ssl=true
+- Example (this is case-sensative in the parse.com Web UI) mongodb://parse.example.com:27017/testerdb?ssl=true
 
 
 ## iOS Examples
