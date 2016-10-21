@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-20
+2016-10-21
 
 ## Initial configuration
 
