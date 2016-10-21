@@ -318,7 +318,7 @@ screen -t ParseBash /bin/bash
 
 # adapted from: https://gist.github.com/leommoore/1e773a7d230ca4bbe1c2
 
-SOURCE=/etc/letsencrypt/live/parse.animatronicgopher.com
+SOURCE=/etc/letsencrypt/live/parse.example.com
 DEST=/etc/ssl/mongodb
 
 if [ ! -e ${DEST} ] ; then
