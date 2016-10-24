@@ -103,7 +103,7 @@ location /dashboard-for-parse/ {
 
 APPID="appid123456"
 MASTERKEY="masterkey654321"
-DBURI="mongodb://127.0.0.1:27017/testerdb?ssl=false"
+DBURI="mongodb://127.0.0.1:27017/testerdb?ssl=false" # change to ssl=true once your MongoDB instance is using encryption
 
 while [ 1 ] ; do
         parse-server --verbose --appId ${APPID} --masterKey ${MASTERKEY} --databaseURI ${DBURI}
@@ -194,6 +194,7 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 - https://github.com/ParsePlatform/parse-dashboard
 - npm install -g parse-dashboard
 - Create: /home/parseguy/parse-dboard-cfg.json,  Note: the *serverURL* will be used by the browser and therefore should use an IP address that is externally accessible
+- change serverURL to https:// if you are using SSL certificates
 
 ```json
 {
