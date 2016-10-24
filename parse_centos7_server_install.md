@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-21
+2016-10-24
 
 ## Initial configuration
 
@@ -440,5 +440,4 @@ end
 
 ## Todo
 
-- https encryption
-- import parse.com data
+- import parse.com data and used a username/password for the MongoDB connect string
