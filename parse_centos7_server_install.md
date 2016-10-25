@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-24
+2016-10-25
 
 ## Initial configuration
 
@@ -35,11 +35,15 @@
 - https://www.digitalocean.com/community/tutorials/how-to-install-nginx-on-centos-7
 - yum install nginx
 - edit: /etc/nginx/nginx.conf
-- within the server{} stanza add the following:
+- within the server{} stanza add the following (note the mutiple apps and different their port numbers, 133x):
 
 ```
-location /parse/ {
+location /parse-testerdb/ {
     proxy_pass http://127.0.0.1:1337;
+}
+
+location /parse-app2/ {
+    proxy_pass http://127.0.0.1:1338;
 }
 
 # for the parse dashboard...
@@ -101,17 +105,22 @@ location /dashboard-for-parse/ {
 ```bash
 #!/bin/bash
 
+APPNAME=testerdb
 APPID="appid123456"
 MASTERKEY="masterkey654321"
-DBURI="mongodb://127.0.0.1:27017/testerdb?ssl=false" # change to ssl=true once your MongoDB instance is using encryption
+DBURI="mongodb://127.0.0.1:27017/${APPNAME}?ssl=false" # change to ssl=true once your MongoDB instance is using encryption
+PORT=1337
+MOUNT=/parse-${APPNAME}
 
 while [ 1 ] ; do
-        parse-server --verbose --appId ${APPID} --masterKey ${MASTERKEY} --databaseURI ${DBURI}
+        parse-server --verbose --appId ${APPID} --masterKey ${MASTERKEY} --databaseURI ${DBURI} --port ${PORT} --mountPath ${MOUNT}
         echo "will restart parse-server in 7 seconds..."
         sleep 7
 done
 ```
 
+- For your 2nd app, you will need to create a similar shell script, but change APPNAME, APPID, MASTERKEY, PORT, and MOUNT. DBURI should be OK.
+- These names must correspond to the *location* settings in your *nginix.conf* file
 - Create write_to_local_parse_server.sh
 
 ```bash
@@ -198,13 +207,21 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 
 ```json
 {
-  "apps": [{
-    "serverURL": "http://192.168.1.27/parse",
-    "appId": "appid123456",
-    "masterKey": "masterkey654321",
-    "appName": "TesterDB",
-    "iconName": ""
-  }],
+  "apps": [
+    {
+      "serverURL": "http://192.168.1.27/parse-testerdb",
+      "appId": "appid123456",
+      "masterKey": "masterkey654321",
+      "appName": "TesterDB",
+      "iconName": ""
+    },
+    {
+      "serverURL": "http://192.168.1.27/parse-app2",
+      "appId": "appidABCDEFG",
+      "masterKey": "masterkeyUVWXYZ",
+      "appName": "App2"
+    }
+  ],
   "iconsFolder": "icons",
   "users": [
     {
@@ -258,7 +275,7 @@ export DEBUG="express:*" # (optional)
 while [ 1 ] ; do
         while [ 1 ] ; do
                 echo "`date`: waiting for parse server to start..."
-                PARSE=`netstat -a -n | egrep -c ":1337.*LISTEN"`
+                PARSE=`netstat -a -n | egrep -c ":133[0-0].*LISTEN"`
                 if [ "${PARSE}" == "1" ] ; then
                         break
                 fi
@@ -288,6 +305,8 @@ startup_message off
 defscrollback 10000
 
 screen -t ParseServer /home/parseguy/start_parse_server.sh
+# if you have a second app:
+# screen -t ParseServer /home/parseguy/start_parse_server2.sh
 screen -t ParseDashboard /home/parseguy/start_dashboard.sh
 screen -t ParseBash /bin/bash
 ```
