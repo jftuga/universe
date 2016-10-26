@@ -424,7 +424,7 @@ ls -la ${DEST}
     db.createUser( { user: "mngRWtesterdb", pwd: "ReadWritePass0246", roles: [{ role:"readWrite", db: "testerdb" } ] } )
 ````
 
-- If you need to change a password:
+- If you need to change a password (see also: https://docs.mongodb.com/v3.2/tutorial/manage-users-and-roles/), run the following command:
 
 ```
     use admin
@@ -442,6 +442,7 @@ ls -la ${DEST}
 ```
 
 - A URL with read-write access will be needed to migrate your app from parse.com
+- See also: https://docs.mongodb.com/manual/reference/connection-string/
 
 ## Export your data from parse.com
 
