@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-25
+2016-10-26
 
 ## Initial configuration
 
@@ -416,6 +416,7 @@ ls -la ${DEST}
 - mongo --ssl -sslCAFile /etc/ssl/mongodb/ca.pem --sslPEMKeyFile /etc/ssl/mongodb/mongodb.pem --authenticationDatabase admin -u mngAdmin -p StrongAdmPass13579 ${HOSTNAME}:27017/testerdb
 
 - create two users, a read-only user, denoted by RO and a read-write user, denoted by RW
+- Do not use these characters in passwords: double-quotes, at sign, colon
 
 ```
     use admin
@@ -423,7 +424,24 @@ ls -la ${DEST}
     db.createUser( { user: "mngRWtesterdb", pwd: "ReadWritePass0246", roles: [{ role:"readWrite", db: "testerdb" } ] } )
 ````
 
-- verify you can connect with these two users
+- If you need to change a password:
+
+```
+    use admin
+    db.changeUserPassword("mngUser1", "myNewPass57132")
+```
+
+- verify you can connect remotely:
+
+```
+    mongo -ssl  "mongodb://mngROtesterdb:ReadOnlyPass97531@parse.example.com:27017/testerdb?ssl=True&authSource=admin"
+    MongoDB shell version: 3.2.9
+    > db.testerdb.find()
+    { "_id" : "COJgythRRU", "age" : 43, "name" : "John", "location" : "Athens", "_created_at" : ISODate("2016-10-08T17:35:42.929Z"), "_updated_at" : ISODate("2016-10-08T17:35:42.929Z") }
+    { "_id" : "oAqUyxAVU3", "age" : 19, "name" : "Bobby", "location" : "Boise", "_created_at" : ISODate("2016-10-08T17:40:33.196Z"), "_updated_at" : ISODate("2016-10-08T17:40:33.196Z") }
+```
+
+- A URL with read-write access will be needed to migrate your app from parse.com
 
 ## Export your data from parse.com
 
