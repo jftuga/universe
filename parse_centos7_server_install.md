@@ -393,6 +393,37 @@ ls -la ${DEST}
 - or without the certs:
 - mongo -ssl "mongodb://parse.example.com:27017/testerdb"
 
+## Install MongoDB username/password authentication 
+
+- https://docs.mongodb.com/v3.2/tutorial/enable-authentication/
+- Connect to your local mongoDB instance:
+- mongo --ssl -sslCAFile /etc/ssl/mongodb/ca.pem --sslPEMKeyFile /etc/ssl/mongodb/mongodb.pem --host ${HOSTNAME} --port 27017
+
+```
+    use admin
+    db.createUser( { user: "mngAdmin", pwd: "StrongAdmPass13579", roles: [ { role: "userAdminAnyDatabase", db: "admin" } ] } )
+```
+
+- Edit /etc/mongod.conf and add:
+
+```
+    security:
+    authorization: enabled
+```
+
+- restart mongod: service mongod restart
+- verify you can connect:
+- mongo --ssl -sslCAFile /etc/ssl/mongodb/ca.pem --sslPEMKeyFile /etc/ssl/mongodb/mongodb.pem --authenticationDatabase admin -u mngAdmin -p StrongAdmPass13579 ${HOSTNAME}:27017/testerdb
+
+- create two users, a read-only user, denoted by RO and a read-write user, denoted by RW
+
+```
+    use admin
+    db.createUser( { user: "mngROtesterdb", pwd: "ReadOnlyPass97531", roles: [{ role:"read", db: "testerdb" } ] } )
+    db.createUser( { user: "mngRWtesterdb", pwd: "ReadWritePass0246", roles: [{ role:"readWrite", db: "testerdb" } ] } )
+````
+
+- verify you can connect with these two users
 
 ## Export your data from parse.com
 
