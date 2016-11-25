@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-10-26
+2016-11-24
 
 ## Initial configuration
 
@@ -238,29 +238,47 @@ curl -X GET -H "X-Parse-Application-Id: ${APPID}" -H "Content-Type: application/
 ```
 
 - to use encrypted passwords in the parse-dboard-cfg.json file:
-- yum install python-pip
-- yum install python-devel
-- yum install libffi-devel
-- yum groupinstall 'Development Tools' # needed to build bcrypt module
-- pip install bcrypt
-- generate passwords with this Python script and insert into the JSON file above
-- Create gen_bcrypt_hash.py:
+- mkdir dashpass && cd dashpass
+- Create gen_bcrypt_hash.js (listed below)
+- ./gen_bcrypt_hash.js
+- copy / paste results into your `parse-dboard-cfg.json` file for the `pass` parameter
 
-```python
-#!/usr/bin/env python2.7
+```js
+#!/bin/node
 
-import getpass
-import bcrypt
+'use strict';
 
-a = getpass.getpass(" Enter password: ")
-b = getpass.getpass("Verify password: ")
+function install_mod(module_name) {
+        const spawn = require( 'child_process' ).spawnSync,
 
-if a != b:
-        print("Passwords do no match!")
-else:
-        rounds = 15
-        print( bcrypt.hashpw(a, bcrypt.gensalt(rounds)) )
+        m = spawn( 'npm', [ 'install', module_name ] );
+        console.log( `stderr: ${m.stderr.toString()}` );
+        console.log( `stdout: ${m.stdout.toString()}` );
+}
+
+function main() {
+        install_mod("bcrypt");
+        install_mod("prompt");
+
+        var b = require("bcrypt");
+        var p = require("prompt");
+
+        var schema = { properties: { password: { message: 'Enter password', hidden: true } } };
+        p.start()
+
+        p.get(schema, function(err, result) {
+                var hash = b.hashSync(result.password, 15);
+                console.log(hash);
+                result.password="x";
+                hash="x";
+        });
+}
+
+main();
+
 ```
+
+
 
 - Create start_dashboard.sh:
 
