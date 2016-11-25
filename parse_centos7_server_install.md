@@ -1,6 +1,6 @@
 # Parse Install on CentOS 7
 
-2016-11-24
+2016-11-25
 
 ## Initial configuration
 
@@ -452,7 +452,7 @@ ls -la ${DEST}
 - verify you can connect remotely:
 
 ```
-    mongo -ssl  "mongodb://mngROtesterdb:ReadOnlyPass97531@parse.example.com:27017/testerdb?ssl=True&authSource=admin"
+    mongo -ssl  "mongodb://mngROtesterdb:ReadOnlyPass97531@parse.example.com:27017/testerdb?ssl=true&authSource=admin"
     MongoDB shell version: 3.2.9
     > db.testerdb.find()
     { "_id" : "COJgythRRU", "age" : 43, "name" : "John", "location" : "Athens", "_created_at" : ISODate("2016-10-08T17:35:42.929Z"), "_updated_at" : ISODate("2016-10-08T17:35:42.929Z") }
@@ -528,3 +528,4 @@ end
 ## Todo
 
 - import parse.com data and used a username/password for the MongoDB connect string
+
