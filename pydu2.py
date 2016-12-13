@@ -7,12 +7,12 @@
 
 # displays recursive directory disk usage, plus totals
 
-import os, sys, locale, argparse
+import os, sys, locale, argparse, time
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.06"
-pgm_date = "Jul-25-2016 00:12"
+pgm_version = "1.07"
+pgm_date = "Dec-13-2016 11:19"
 
 
 
@@ -41,6 +41,8 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 	file_count = 0
 	dir_count = 0
 	err_count = 0
+	time_begin = time.time()
+
 	for root, dirs, files in os.walk( parameter ):
 		if skipdot and "\\." in root:
 			#print("skipping: ", root)
@@ -68,6 +70,13 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 		if status:
 			if not (dir_count % 100):
 				print("Directories processed:", dir_count,file=sys.stderr)
+				time_begin = time.time()
+			# give user more feedback about number of directories processed
+			if not (dir_count % 5):
+				if ( time.time() - time_begin ) > 0.2:
+					print("Directories processed:", dir_count,file=sys.stderr)
+					time_begin = time.time()
+
 
 	locale.setlocale(locale.LC_ALL, '')
 	print()
