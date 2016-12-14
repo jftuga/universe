@@ -21,8 +21,8 @@ from collections import defaultdict
 from datetime import datetime
 from random import shuffle
 
-pgm_version = "1.18beta"
-pgm_date = "Oct-09-2016 15:19"
+pgm_version = "1.19"
+pgm_date = "Dec-14-2016 12:41"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -259,6 +259,7 @@ def tcp_listen(port:int) -> None:
 	host = "0.0.0.0"
 
 	print("Listening for incoming TCP connections on %s:%s" % (host,port))
+	print("Press Ctrl-Break to exit.")
 	server = socketserver.TCPServer((host, port), tcp_connect_handler)
 	server.serve_forever()
 
@@ -266,7 +267,6 @@ def tcp_listen(port:int) -> None:
 
 def tcp_listen_setup(ports:str) -> None:
 	port_list = get_port_list(ports)
-	print("dbg: %s", port_list)
 
 	with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
 		alpha = {executor.submit(tcp_listen, int(current_port)): current_port for current_port in port_list}
