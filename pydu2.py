@@ -7,12 +7,12 @@
 
 # displays recursive directory disk usage, plus totals
 
-import os, sys, locale, argparse, time
+import os, sys, locale, argparse, time, statistics
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.07"
-pgm_date = "Dec-13-2016 11:19"
+pgm_version = "1.08"
+pgm_date = "Dec-19-2016 08:45"
 
 
 
@@ -32,7 +32,7 @@ def fmt(n,precision=2):
 
 #############################################################################
 
-def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdot=False):
+def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdot=False,stats=False):
 
 	extensions = defaultdict(int)
 	longest_ext = ""
@@ -42,6 +42,7 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 	dir_count = 0
 	err_count = 0
 	time_begin = time.time()
+	stats_file_sizes = []
 
 	for root, dirs, files in os.walk( parameter ):
 		if skipdot and "\\." in root:
@@ -58,6 +59,8 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 			fullname = join(root,name)
 			try:
 				current += getsize(fullname)
+				if stats:
+					stats_file_sizes.append(current)
 				file_count += 1
 			except:
 				safe_print("Error: unable to read: %s" % fullname, isError=True)
@@ -80,12 +83,29 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 
 	locale.setlocale(locale.LC_ALL, '')
 	print()
+
+	if want_ext:
+		print("file extensions")
+		print("=" * 15)
+		t=0
+		width = len(longest_ext)+2
+		for e in sorted(extensions, key=extensions.get, reverse=True):
+			spc = width - len(e)
+			print("%s%s%s" % (e," "*spc,extensions[e]))
+		print()
+	else:
+		print()	
+
+	print("summary")
+	print("=" * 7)
+
 	print("%s files" % ( fmt(file_count,0) ))
 	print("%s directories" % ( fmt(dir_count,0) ))
 	if err_count:
 		print("%s read errors" % ( fmt(err_count,0) ))
 
 	print()
+
 	print("%s bytes" % ( fmt(total,0) ))
 	# comparison values are about 90.909% of kilo,mega,giga, and terabyte
 	if total > 1126:
@@ -101,14 +121,39 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 		
 	print()
 
-	if want_ext:
-		t=0
-		width = len(longest_ext)+2
-		for e in sorted(extensions, key=extensions.get, reverse=True):
-			spc = width - len(e)
-			print("%s%s%s" % (e," "*spc,extensions[e]))
-		print()
-		
+	if stats and len(stats_file_sizes):
+		mean = mode = median = "N/A"
+		print("file statistics (in bytes)")
+		print("=" * 26)
+
+		try:
+			mean = statistics.mean(stats_file_sizes)
+		except:
+			print("mean     : N/A")
+		else:
+			print("mean     : %s" % fmt(mean,0))
+
+		try:
+			median = statistics.median(stats_file_sizes)
+		except:
+			print("median   : N/A")
+		else:
+			print("median   : %s" % fmt(median,0))
+
+		try:
+			mode = statistics.mode(stats_file_sizes)
+		except:
+			print("mode     : N/A")
+		else:
+			print("mode     : %s" % fmt(mode,0))
+
+		try:
+			stdev = statistics.stdev(stats_file_sizes)
+		except:
+			print("stdev    : N/A")
+		else:
+			print("stdev    : %s" % fmt(stdev,0))
+	
 #############################################################################
 
 def main():
@@ -118,13 +163,14 @@ def main():
 	parser.add_argument("-q", "--quiet", help="don't display individual directories", action="store_true")
 	parser.add_argument("-s", "--status", help="send processing status to STDERR", action="store_true")
 	parser.add_argument("-n", "--nodot", help="skip directories starting with '.'", action="store_true")
+	parser.add_argument("-S", "--stats", help="display mean, median, mode and stdev file statistics", action="store_true")
 	args = parser.parse_args()
 
 	verbose = False if args.quiet else True
 
 	if isdir(args.dname):
 		try:
-			get_disk_usage(args.dname,args.ext,verbose,args.status,args.nodot)
+			get_disk_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats)
 		except KeyboardInterrupt:
 			safe_print("", isError=True)
 			safe_print("", isError=True)
