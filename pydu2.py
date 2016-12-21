@@ -11,8 +11,8 @@ import os, sys, locale, argparse, time, statistics
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.09"
-pgm_date = "Dec-20-2016 13:46"
+pgm_version = "1.10"
+pgm_date = "Dec-20-2016 20:42"
 
 
 
@@ -43,9 +43,10 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 	err_count = 0
 	time_begin = time.time()
 	stats_file_sizes = []
+	dot_dir = os.sep + "."
 
 	for root, dirs, files in os.walk( parameter ):
-		if skipdot and "\\." in root:
+		if skipdot and dot_dir in root:
 			#print("skipping: ", root)
 			continue
 		dir_total = 0
