@@ -9,8 +9,8 @@ import os, sys, locale, argparse, time, statistics
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.11"
-pgm_date = "Dec-29-2016 10:45"
+pgm_version = "1.20"
+pgm_date = "Dec-29-2016 11:22"
 
 #############################################################################
 
@@ -62,73 +62,7 @@ def display_file_stats(stats_file_sizes):
 
 #############################################################################
 
-def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdot=False,stats=False,bare=False,norecurse=False,verbose_files=False):
-	extensions = defaultdict(int)
-	longest_ext = ""
-	total = 0
-	dir_total = 0
-	file_count = 0
-	dir_count = 0
-	err_count = 0
-	time_begin = time.time()
-	stats_file_sizes = []
-	dot_dir = os.sep + "."
-
-	for root, dirs, files in os.walk( parameter ):
-		if skipdot and dot_dir in root:
-			#print("skipping: ", root)
-			continue
-		dir_total = 0
-		dir_count += 1
-		current = 0
-		for name in files:
-			if want_ext:
-				tmp = os.path.splitext(name)[1][1:].lower()
-				extensions[tmp] += 1
-				if len(tmp) > len(longest_ext): longest_ext=tmp
-			fullname = join(root,name)
-			try:
-				current += getsize(fullname)
-				if stats:
-					stats_file_sizes.append(current)
-				file_count += 1
-			except:
-				safe_print("Error: unable to read: %s" % fullname, isError=True)
-				err_count += 1
-		total += current
-		dir_total += current
-
-		# directory size in kilobytes
-		if verbose: safe_print("%s\t%s" % (fmt(round(dir_total/1024.0,0),0), root))
-		elif verbose_files: safe_print("%s\t%s\t%s" % (fmt(round(dir_total/1024.0,0),0), len(files), root))
-		if status:
-			if not (dir_count % 100):
-				print("Directories processed:", dir_count,file=sys.stderr)
-				time_begin = time.time()
-			# give user more feedback about number of directories processed
-			if not (dir_count % 5):
-				if ( time.time() - time_begin ) > 0.2:
-					print("Directories processed:", dir_count,file=sys.stderr)
-					time_begin = time.time()
-
-		if norecurse: break
-
-	locale.setlocale(locale.LC_ALL, '')
-	if not bare: print()
-
-	if want_ext:
-		print("file extensions")
-		print("=" * 15)
-		t=0
-		width = len(longest_ext)+2
-		for e in sorted(extensions, key=extensions.get, reverse=True):
-			spc = width - len(e)
-			print("%s%s%s" % (e," "*spc,extensions[e]))
-		print()
-	else:
-		if not bare: print()	
-
-	if not bare:
+def display_summary(file_count,err_count,dir_count,total,stats,stats_file_sizes):
 		print("summary")
 		print("=" * 7)
 
@@ -155,6 +89,92 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 
 		if stats and len(stats_file_sizes):
 			display_file_stats(stats_file_sizes)
+
+#############################################################################
+
+def display_extentions(longest_ext,extensions):
+		print("file extensions")
+		print("=" * 15)
+		t=0
+		width = len(longest_ext)+2
+		for e in sorted(extensions, key=extensions.get, reverse=True):
+			spc = width - len(e)
+			print("%s%s%s" % (e," "*spc,extensions[e]))
+		print()
+
+#############################################################################
+
+def display_status(dir_count,time_begin):
+	if not (dir_count % 100):
+		print("Directories processed:", dir_count,file=sys.stderr)
+		time_begin = time.time()
+
+	# give user more feedback about number of directories processed
+	if not (dir_count % 5):
+		if ( time.time() - time_begin ) > 0.2:
+			print("Directories processed:", dir_count,file=sys.stderr)
+			time_begin = time.time()
+
+	return time_begin
+
+#############################################################################
+
+def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdot=False,stats=False,bare=False,norecurse=False,verbose_files=False):
+	extensions = defaultdict(int)
+	longest_ext = ""
+	total = 0
+	dir_total = 0
+	file_count = 0
+	dir_count = 0
+	err_count = 0
+	time_begin = time.time()
+	stats_file_sizes = []
+	dot_dir = os.sep + "."
+
+	for root, dirs, files in os.walk( parameter ):
+		if skipdot and dot_dir in root:
+			# skip directories beginning with a '.'
+			continue
+		dir_total = 0
+		dir_count += 1
+		current = 0
+		for name in files:
+			if want_ext:
+				tmp = os.path.splitext(name)[1][1:].lower()
+				extensions[tmp] += 1
+				if len(tmp) > len(longest_ext): longest_ext=tmp
+			fullname = join(root,name)
+			try:
+				current += getsize(fullname)
+				if stats:
+					stats_file_sizes.append(current)
+				file_count += 1
+			except:
+				safe_print("Error: unable to read: %s" % fullname, isError=True)
+				err_count += 1
+		total += current
+		dir_total += current
+
+		# display directory size in kilobytes
+		if verbose: safe_print("%s\t%s" % (fmt(round(dir_total/1024.0,0),0), root))
+		elif verbose_files: safe_print("%s\t%s\t%s" % (fmt(round(dir_total/1024.0,0),0), len(files), root))
+
+		if status:
+			time_begin = display_status(dir_count,time_begin)
+
+		if norecurse: break
+	# end of main directory loop
+
+	locale.setlocale(locale.LC_ALL, '')
+	
+	if not bare: print()
+	if want_ext:
+		display_extentions(longest_ext,extensions)
+	else:
+		if not bare: print()	
+
+	if not bare:
+		display_summary(file_count,err_count,dir_count,total,stats,stats_file_sizes)
 
 #############################################################################
 
