@@ -2,19 +2,15 @@
 
 # pydu2.py
 # -John Taylor
-# Sep-9-2005
-# revamp on Sep-10-2015, Nov-15-2015, Jul-22-2016
 
-# displays recursive directory disk usage, plus totals
+# display directory disk usage in kilobytes, plus totals
 
 import os, sys, locale, argparse, time, statistics
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 
-pgm_version = "1.10"
-pgm_date = "Dec-20-2016 20:42"
-
-
+pgm_version = "1.11"
+pgm_date = "Dec-29-2016 10:45"
 
 #############################################################################
 
@@ -32,8 +28,41 @@ def fmt(n,precision=2):
 
 #############################################################################
 
-def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdot=False,stats=False,bare=False):
+def display_file_stats(stats_file_sizes):
+			print("file statistics (in bytes)")
+			print("=" * 26)
 
+			try:
+				mean = statistics.mean(stats_file_sizes)
+			except:
+				print("mean     : N/A")
+			else:
+				print("mean     : %s" % fmt(mean,0))
+
+			try:
+				median = statistics.median(stats_file_sizes)
+			except:
+				print("median   : N/A")
+			else:
+				print("median   : %s" % fmt(median,0))
+
+			try:
+				mode = statistics.mode(stats_file_sizes)
+			except:
+				print("mode     : N/A")
+			else:
+				print("mode     : %s" % fmt(mode,0))
+
+			try:
+				stdev = statistics.stdev(stats_file_sizes)
+			except:
+				print("stdev    : N/A")
+			else:
+				print("stdev    : %s" % fmt(stdev,0))
+
+#############################################################################
+
+def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdot=False,stats=False,bare=False,norecurse=False,verbose_files=False):
 	extensions = defaultdict(int)
 	longest_ext = ""
 	total = 0
@@ -71,6 +100,7 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 
 		# directory size in kilobytes
 		if verbose: safe_print("%s\t%s" % (fmt(round(dir_total/1024.0,0),0), root))
+		elif verbose_files: safe_print("%s\t%s\t%s" % (fmt(round(dir_total/1024.0,0),0), len(files), root))
 		if status:
 			if not (dir_count % 100):
 				print("Directories processed:", dir_count,file=sys.stderr)
@@ -81,6 +111,7 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 					print("Directories processed:", dir_count,file=sys.stderr)
 					time_begin = time.time()
 
+		if norecurse: break
 
 	locale.setlocale(locale.LC_ALL, '')
 	if not bare: print()
@@ -107,7 +138,6 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 			print("%s read errors" % ( fmt(err_count,0) ))
 
 		print()
-
 		print("%s bytes" % ( fmt(total,0) ))
 		# comparison values are about 90.909% of kilo,mega,giga, and terabyte
 		if total > 1126:
@@ -124,56 +154,29 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 		print()
 
 		if stats and len(stats_file_sizes):
-			mean = mode = median = "N/A"
-			print("file statistics (in bytes)")
-			print("=" * 26)
+			display_file_stats(stats_file_sizes)
 
-			try:
-				mean = statistics.mean(stats_file_sizes)
-			except:
-				print("mean     : N/A")
-			else:
-				print("mean     : %s" % fmt(mean,0))
-
-			try:
-				median = statistics.median(stats_file_sizes)
-			except:
-				print("median   : N/A")
-			else:
-				print("median   : %s" % fmt(median,0))
-
-			try:
-				mode = statistics.mode(stats_file_sizes)
-			except:
-				print("mode     : N/A")
-			else:
-				print("mode     : %s" % fmt(mode,0))
-
-			try:
-				stdev = statistics.stdev(stats_file_sizes)
-			except:
-				print("stdev    : N/A")
-			else:
-				print("stdev    : %s" % fmt(stdev,0))
-	
 #############################################################################
 
 def main():
-	parser = argparse.ArgumentParser(description="Display recursive directory disk usage, plus totals", epilog="version: %s (%s)" % (pgm_version,pgm_date))
+	parser = argparse.ArgumentParser(description="Display directory disk usage in kilobytes, plus totals", epilog="version: %s (%s)" % (pgm_version,pgm_date))
 	parser.add_argument("dname", help="directory name", nargs="?", default=".")
 	parser.add_argument("-b", "--bare", help="do not print summary; useful for sorting when used exclusively", action="store_true")
 	parser.add_argument("-e", "--ext", help="summarize file extensions", action="store_true")
 	parser.add_argument("-q", "--quiet", help="don't display individual directories", action="store_true")
 	parser.add_argument("-s", "--status", help="send processing status to STDERR", action="store_true")
 	parser.add_argument("-n", "--nodot", help="skip directories starting with '.'", action="store_true")
+	parser.add_argument("-N", "--norecurse", help="do not recurse", action="store_true")
+	parser.add_argument("-f", "--files", help="also display number of files in each directory", action="store_true")
 	parser.add_argument("-S", "--stats", help="display mean, median, mode and stdev file statistics", action="store_true")
 	args = parser.parse_args()
 
 	verbose = False if args.quiet else True
+	verbose = False if args.files else verbose
 
 	if isdir(args.dname):
 		try:
-			get_disk_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare)
+			get_disk_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare,args.norecurse,args.files)
 		except KeyboardInterrupt:
 			safe_print("", isError=True)
 			safe_print("", isError=True)
