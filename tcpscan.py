@@ -21,8 +21,8 @@ from collections import defaultdict
 from datetime import datetime
 from random import shuffle
 
-pgm_version = "1.19"
-pgm_date = "Dec-14-2016 12:41"
+pgm_version = "1.20"
+pgm_date = "Dec-30-2016 16:27"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
@@ -297,7 +297,7 @@ def main() -> None:
 	parser.add_argument("target", help="e.g. 192.168.1.0/24 192.168.1.100 www.example.com")
 	parser.add_argument("-x", "--skipnetblock", help="skip a sub-netblock, e.g. 192.168.1.96/28")
 	parser.add_argument("-X", "--skipports", help="exclude a subset of ports, e.g. 135-139")
-	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, e.g. 22,80,443,445,515  e.g. 80-515")
+	parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, e.g. 22,80,443,445,515  e.g. 80-515  e.g. all")
 	parser.add_argument("-T", "--threads", help="number of concurrent threads, default: %s" % (max_workers))
 	parser.add_argument("-t", "--timeout", help="number of seconds to wait for a connect, default: %s for lan, %s for wan" % (connect_timeout_lan,connect_timeout_wan))
 	parser.add_argument("-s", "--shufflehosts", help="randomize the order IPs are scanned", action="store_true")
@@ -335,6 +335,9 @@ def main() -> None:
 	if args.runtime:
 		runtime_stats = int(args.runtime)
 		runtime_stats_last_timestamp = int(time.time())
+	if args.ports:
+		if "all" == args.ports.lower():
+			args.ports = "1-65535"
 
 	loop_seconds = int(args.loop) if args.loop else 1
 	if 0 == loop_seconds:
