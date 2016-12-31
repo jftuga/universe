@@ -8,9 +8,10 @@
 import os, sys, locale, argparse, time, statistics
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
+from datetime import timedelta
 
-pgm_version = "1.20"
-pgm_date = "Dec-29-2016 11:22"
+pgm_version = "1.21"
+pgm_date = "Dec-31-2016 14:23"
 
 #############################################################################
 
@@ -35,30 +36,30 @@ def display_file_stats(stats_file_sizes):
 			try:
 				mean = statistics.mean(stats_file_sizes)
 			except:
-				print("mean     : N/A")
+				print("mean          : N/A")
 			else:
-				print("mean     : %s" % fmt(mean,0))
+				print("mean          : %s" % fmt(mean,0))
 
 			try:
 				median = statistics.median(stats_file_sizes)
 			except:
-				print("median   : N/A")
+				print("median        : N/A")
 			else:
-				print("median   : %s" % fmt(median,0))
+				print("median        : %s" % fmt(median,0))
 
 			try:
 				mode = statistics.mode(stats_file_sizes)
 			except:
-				print("mode     : N/A")
+				print("mode          : N/A")
 			else:
-				print("mode     : %s" % fmt(mode,0))
+				print("mode          : %s" % fmt(mode,0))
 
 			try:
 				stdev = statistics.stdev(stats_file_sizes)
 			except:
-				print("stdev    : N/A")
+				print("stdev         : N/A")
 			else:
-				print("stdev    : %s" % fmt(stdev,0))
+				print("stdev         : %s" % fmt(stdev,0))
 
 #############################################################################
 
@@ -176,6 +177,8 @@ def get_disk_usage(parameter=".",want_ext=False,verbose=True,status=False,skipdo
 	if not bare:
 		display_summary(file_count,err_count,dir_count,total,stats,stats_file_sizes)
 
+	return file_count, dir_count
+
 #############################################################################
 
 def main():
@@ -196,7 +199,18 @@ def main():
 
 	if isdir(args.dname):
 		try:
-			get_disk_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare,args.norecurse,args.files)
+			if args.stats:
+				time_start = time.time()
+
+			fcount, dcount = get_disk_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare,args.norecurse,args.files)
+			if args.stats:
+				time_end = time.time()
+				time_elapsed = timedelta( seconds= (time_end - time_start))
+				dcount_per_sec = dcount / (time_end - time_start)
+				fcount_per_sec = fcount / (time_end - time_start)
+				print("elapsed time  : %s" % (time_elapsed))
+				print("files per sec : %.2f" % (fcount_per_sec))
+				print("dirs per sec  : %.2f" % (dcount_per_sec))
 		except KeyboardInterrupt:
 			safe_print("", isError=True)
 			safe_print("", isError=True)
