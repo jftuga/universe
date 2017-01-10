@@ -6,18 +6,20 @@
 
 # Display directory usage (in kilobytes)
 
-import os, sys, locale, argparse, time, statistics, concurrent.futures
+import os, re, sys, locale, argparse, time, statistics, concurrent.futures
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 from datetime import timedelta
 
-pgm_version = "2.12"
-pgm_date = "Jan-6-2017 20:35"
+pgm_version = "2.13"
+pgm_date = "Jan-10-2017 17:31"
 
 # keep trace of file/directory stats, extensions, and total number of directories processed
 all_stats = {}
 all_extensions = {}
 all_dir_count = 0
+all_exclude_count = 0
+all_regexpr_excludes = []
 
 #############################################################################
 
@@ -163,6 +165,8 @@ def display_summary(file_count:int,err_count:int,dir_count:int,total_bytes:int,s
     if err_count:
         percent = err_count / (err_count+file_count)
         print("read errors   : %s (%s%%)" % ( err_count, fmt(percent,2) ))
+    if all_exclude_count:
+        print("exclusions    : %s" % (fmt(all_exclude_count,0)))
 
     print("bytes         : %s" % ( fmt(total_bytes,0) ))
     # comparison values are about 90.909% of kilo,mega,giga, and terabyte
@@ -284,7 +288,7 @@ def display_runtime_statistics(time_start:time.time, time_end:time.time, file_co
 
 #############################################################################
 
-def get_disk_threaded_usage(root_dir:str=".",ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1) -> None:
+def get_disk_threaded_usage(root_dir:str=".",ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1,exclude:str=None,regexpr:str=None) -> None:
     """Initiates the multithreading directory scans using up to max_worker number of threads
         Unless -N (norecurse), the scans recursively visit each directory in root_dir
 
@@ -311,20 +315,24 @@ def get_disk_threaded_usage(root_dir:str=".",ext:bool=False,verbose:bool=True,st
 
         max_workers: number of threads passed to cmd-line -T
 
+        exclude: true if cmd-line -x is invoked (colon-separated list of exclusions)
+
+        regexprs: true if cmd-line -X in invoked (colon-separated list of reg. expr. exclusions)
+
     Returns:
         None
     """
     if norecurse:
         walker = os.walk(root_dir)
         first = next(walker)
-        get_disk_usage(first,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,1)
+        get_disk_usage(first,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,1,exclude,regexpr)
     else:
         with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-            {executor.submit(get_disk_usage,walker,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,human,max_workers): walker for walker in os.walk(root_dir)}
+            {executor.submit(get_disk_usage,walker,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,human,max_workers,exclude,regexpr): walker for walker in os.walk(root_dir)}
 
 #############################################################################
 
-def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1) -> None:
+def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1,exclude:str=None,regexpr:str=None) -> None:
     """Processes a single directory, compiling stats such a file count, file size, extensions, etc.
         This information is placed into: all_stats, all_extensions, all_dir_count
 
@@ -336,7 +344,32 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
     Returns:
         None
     """
-    global all_stats, all_extensions, all_dir_count
+    global all_stats, all_extensions, all_dir_count, all_exclude_count
+
+    root, dirs, files = walker
+    if skipdot and os.sep + "." in root:
+        # skip directories beginning with a '.'
+        return
+
+    if exclude:
+        # skip directories found from -x
+        exclude_list = exclude.lower().split(":")
+        for entry in exclude_list:
+            if entry in root.lower():
+                if not len(entry):
+                    continue
+                if status and not bare: safe_print("excluding-STR\t%s" % (root), True)
+                all_exclude_count += 1
+                return
+
+    if regexpr:
+        # skip directories found from -X
+        for entry in all_regexpr_excludes:
+            result = entry.search(root)
+            if result:
+                if status and not bare: safe_print("excluding-REG\t%s" % (root), True)
+                all_exclude_count += 1
+                return
 
     curr_exten_list = defaultdict(int)
     longest_ext = ""
@@ -346,19 +379,14 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
     dir_count = 0
     err_count = 0
     stats_file_sizes = []
-    dot_dir = os.sep + "."
 
-    root, dirs, files = walker
-
-    if skipdot and dot_dir in root:
-        # skip directories beginning with a '.'
-        return
     dir_total = 0
     dir_count += 1
     all_dir_count += 1
     current = 0
     for name in files:
         if ext:
+            # keep track of file extentions when -e is invoked
             tmp = os.path.splitext(name)[1][1:].lower()
             curr_exten_list[tmp] += 1
         fullname = join(root,name)
@@ -390,6 +418,34 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
 
 ######################################################################
 
+def build_regexpr_excludes(regexpr:str) -> int:
+    """
+    Convert a colon-separated string of REs into a list of case-insensitive indivdual REs
+    Place them into: all_regexpr_excludes
+
+    Args:
+        regexpr: the colon-separated list
+
+    Returns:
+        The number of REs created
+    """
+
+    global all_regexpr_excludes
+
+    if not regexpr:
+        return 0
+
+    regexpr_list = regexpr.lower().split(":")
+    for entry in regexpr_list:
+        if not len(entry):
+            continue
+        excl_re = re.compile(entry,re.I)
+        all_regexpr_excludes.append(excl_re)
+
+    return len(all_regexpr_excludes)
+
+######################################################################
+
 def main() -> None:
     """Process command-line arguments, get directory usage, print results
 
@@ -408,6 +464,9 @@ def main() -> None:
     parser.add_argument("-S", "--stats", help="display mean, median, mode and stdev file statistics", action="store_true")
     parser.add_argument("-H", "--human", help="display numbers in a more human readable format", action="store_true")
     parser.add_argument("-T", "--threads", help="number of concurrent threads, consider for SANs or NVMe, default: 1")
+    parser.add_argument("-x", "--exclude", help="colon-separated list of case-insensitive strings to exclude")
+    parser.add_argument("-X", "--regexpr", help="colon-separated list of case-insensitive regular expressions to exclude")
+
     args = parser.parse_args()
 
     verbose = False if args.quiet else True
@@ -417,6 +476,9 @@ def main() -> None:
             max_workers = 1
     unique_ext_count = 0
 
+    if args.regexpr:
+        build_regexpr_excludes(args.regexpr)
+
     # make sure long numbers are appropriately separated with commas
     locale.setlocale(locale.LC_ALL, '')
 
@@ -425,7 +487,7 @@ def main() -> None:
             if args.stats:
                 time_start = time.time()
             
-            get_disk_threaded_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare,args.norecurse,args.files,args.human,max_workers)
+            get_disk_threaded_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare,args.norecurse,args.files,args.human,max_workers,args.exclude,args.regexpr)
 
             if args.ext:
                 unique_ext_count = display_threaded_extensions()
