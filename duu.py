@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # duu.py
-# Directory Usage Utility
+# Directory Usage Utility (duu)
 # -John Taylor
 
 # Display directory usage (in kilobytes)
@@ -11,8 +11,8 @@ from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 from datetime import timedelta
 
-pgm_version = "2.13"
-pgm_date = "Jan-10-2017 17:31"
+pgm_version = "2.14"
+pgm_date = "Jan-14-2017 21:53"
 
 # keep trace of file/directory stats, extensions, and total number of directories processed
 all_stats = {}
@@ -20,6 +20,7 @@ all_extensions = {}
 all_dir_count = 0
 all_exclude_count = 0
 all_regexpr_excludes = []
+all_csv_list = []
 
 #############################################################################
 
@@ -284,11 +285,12 @@ def display_runtime_statistics(time_start:time.time, time_end:time.time, file_co
     print("elapsed time  : %s" % (time_elapsed))
     print("files per sec : %s" % (fmt(fcount_per_sec)))
     print("dirs per sec  : %s" % (fmt(dcount_per_sec)))
-    print("thread count  : %s" % (threads))
+    if threads > 1:
+        print("thread count  : %d" % (threads))
 
 #############################################################################
 
-def get_disk_threaded_usage(root_dir:str=".",ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1,exclude:str=None,regexpr:str=None) -> None:
+def get_disk_threaded_usage(root_dir:str=".",ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1,exclude:str=None,regexpr:str=None,csv_output:bool=False) -> None:
     """Initiates the multithreading directory scans using up to max_worker number of threads
         Unless -N (norecurse), the scans recursively visit each directory in root_dir
 
@@ -319,20 +321,22 @@ def get_disk_threaded_usage(root_dir:str=".",ext:bool=False,verbose:bool=True,st
 
         regexprs: true if cmd-line -X in invoked (colon-separated list of reg. expr. exclusions)
 
+        csv_output: treu if cmd-line -o is invoked
+
     Returns:
         None
     """
     if norecurse:
         walker = os.walk(root_dir)
         first = next(walker)
-        get_disk_usage(first,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,1,exclude,regexpr)
+        get_disk_usage(first,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,1,exclude,regexpr,csv_output)
     else:
         with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
-            {executor.submit(get_disk_usage,walker,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,human,max_workers,exclude,regexpr): walker for walker in os.walk(root_dir)}
+            {executor.submit(get_disk_usage,walker,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,human,max_workers,exclude,regexpr,csv_output): walker for walker in os.walk(root_dir)}
 
 #############################################################################
 
-def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1,exclude:str=None,regexpr:str=None) -> None:
+def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=False,skipdot:bool=False,stats:bool=False,bare:bool=False,norecurse:bool=False,verbose_files:bool=False,human:bool=False,max_workers:int=1,exclude:str=None,regexpr:str=None,csv_output:bool=False) -> None:
     """Processes a single directory, compiling stats such a file count, file size, extensions, etc.
         This information is placed into: all_stats, all_extensions, all_dir_count
 
@@ -344,7 +348,7 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
     Returns:
         None
     """
-    global all_stats, all_extensions, all_dir_count, all_exclude_count
+    global all_stats, all_extensions, all_dir_count, all_exclude_count, all_csv_list
 
     root, dirs, files = walker
     if skipdot and os.sep + "." in root:
@@ -358,7 +362,7 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
             if entry in root.lower():
                 if not len(entry):
                     continue
-                if status and not bare: safe_print("excluding-STR\t%s" % (root), True)
+                if status and not bare: safe_print("excluding-STR: %s" % (root), True)
                 all_exclude_count += 1
                 return
 
@@ -367,7 +371,7 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
         for entry in all_regexpr_excludes:
             result = entry.search(root)
             if result:
-                if status and not bare: safe_print("excluding-REG\t%s" % (root), True)
+                if status and not bare: safe_print("excluding-REG: %s" % (root), True)
                 all_exclude_count += 1
                 return
 
@@ -404,10 +408,20 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
     if human:
         if verbose: safe_print("%s\t%s" % (convert_size(dir_total), root))
         elif verbose_files: safe_print("%s\t%s\t%s" % (convert_size(dir_total), convert_size(len(files)), root))
-    else:
+
+        if csv_output and verbose_files:
+            all_csv_list.append('"%s","%s","%s"' % (convert_size(dir_total), convert_size(len(files)), root))
+        elif csv_output:
+            all_csv_list.append('"%s","%s"' % (convert_size(dir_total), root))
+    else: # not human-readable
         # display directory size in kilobytes, when using 'bare' do not include commas
         if verbose: safe_print("%s\t%s" % (fmt(round(dir_total/1024.0,0),0,bare), root))
         elif verbose_files: safe_print("%s\t%s\t%s" % (fmt(round(dir_total/1024.0,0),0,bare), fmt(len(files),0), root))
+
+        if csv_output and verbose_files:
+            all_csv_list.append('"%s","%s","%s"' % (fmt(round(dir_total/1024.0,0),0,bare), fmt(len(files),0), root))
+        elif csv_output:
+            all_csv_list.append('"%s","%s"' % (fmt(round(dir_total/1024.0,0),0,bare), root))
 
     if status and not (all_dir_count % 100):
         print("Directories processed:", all_dir_count,file=sys.stderr)
@@ -452,7 +466,7 @@ def main() -> None:
     Returns:
         0 on success, 1 on error
     """
-    parser = argparse.ArgumentParser(description="Display directory disk usage in kilobytes, plus totals", epilog="Directory Usage Utility, version: %s (%s)" % (pgm_version,pgm_date))
+    parser = argparse.ArgumentParser(description="Display directory disk usage in kilobytes, plus totals", epilog="Directory Usage Utility (duu), version: %s (%s)" % (pgm_version,pgm_date))
     parser.add_argument("dname", help="directory name", nargs="?", default=".")
     parser.add_argument("-b", "--bare", help="do not print summary or stats; useful for sorting when used exclusively", action="store_true")
     parser.add_argument("-e", "--ext", help="summarize file extensions", action="store_true")
@@ -463,9 +477,10 @@ def main() -> None:
     parser.add_argument("-f", "--files", help="also display number of files in each directory", action="store_true")
     parser.add_argument("-S", "--stats", help="display mean, median, mode and stdev file statistics", action="store_true")
     parser.add_argument("-H", "--human", help="display numbers in a more human readable format", action="store_true")
-    parser.add_argument("-T", "--threads", help="number of concurrent threads, consider for SANs or NVMe, default: 1")
+    parser.add_argument("-T", "--threads", help="number of concurrent threads, consider for SANs")
     parser.add_argument("-x", "--exclude", help="colon-separated list of case-insensitive strings to exclude")
     parser.add_argument("-X", "--regexpr", help="colon-separated list of case-insensitive regular expressions to exclude")
+    parser.add_argument("-o", "--output", help="output to CSV file")
 
     args = parser.parse_args()
 
@@ -487,7 +502,7 @@ def main() -> None:
             if args.stats:
                 time_start = time.time()
             
-            get_disk_threaded_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare,args.norecurse,args.files,args.human,max_workers,args.exclude,args.regexpr)
+            get_disk_threaded_usage(args.dname,args.ext,verbose,args.status,args.nodot,args.stats,args.bare,args.norecurse,args.files,args.human,max_workers,args.exclude,args.regexpr,args.output)
 
             if args.ext:
                 unique_ext_count = display_threaded_extensions()
@@ -504,6 +519,12 @@ def main() -> None:
             safe_print("You pressed Ctrl+C", isError=True)
             safe_print("", isError=True)
             return 1
+        else:
+            if args.output:
+                with open(args.output,mode="w",encoding="latin-1") as fp:
+                    fp.write("\n".join(all_csv_list))
+                    fp.write("\n")
+
     else:
         safe_print("", isError=True)
         safe_print("Error: command-line parameter is not a directory: %s" % args.dname, isError=True)
