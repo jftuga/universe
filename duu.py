@@ -6,7 +6,7 @@
 
 # Display directory usage (in kilobytes)
 
-"""
+r"""
 examples
 --------
 1) python3 duu.py -h
@@ -21,7 +21,7 @@ examples
 4) python3 duu.py -b /home | sort -n
      (on Linux, sort the output: smallest directory to largest)
 
-5) python3 duu.py -s -S -q -T 4 \\\\dept\\example.com\\home\\users > users.txt
+5) python3 duu.py -s -S -q -T 4 \\dept\example.com\home\users > users.txt
     (displays status every 100 directories to STDERR, display stats at end, 
     quiet[don't display individual directories], use 4 thread)
     (useful on your SAN and large folders)
@@ -33,7 +33,7 @@ from collections import defaultdict
 from datetime import timedelta
 
 pgm_version = "2.15"
-pgm_date = "Jan-16-2017 11:56"
+pgm_date = "Jan-16-2017 12.37"
 
 # keep trace of file/directory stats, extensions, and total number of directories processed
 all_stats = {}
