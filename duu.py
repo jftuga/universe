@@ -6,13 +6,34 @@
 
 # Display directory usage (in kilobytes)
 
+"""
+examples
+--------
+1) python3 duu.py -h
+    (help, shows all options)
+
+2) python3 duu.py c:\Windows
+    (basic usage, recursive scan)
+
+3) python3 duu.py -b -o data.csv c:\Windows
+     (bare format, tab-separated, can be imported into a spreadsheet, then sorted)
+
+4) python3 duu.py -b /home | sort -n
+     (on Linux, sort the output: smallest directory to largest)
+
+5) python3 duu.py -s -S -q -T 4 \\\\dept\\example.com\\home\\users > users.txt
+    (displays status every 100 directories to STDERR, display stats at end, 
+    quiet[don't display individual directories], use 4 thread)
+    (useful on your SAN and large folders)
+"""
+
 import os, re, sys, locale, argparse, time, statistics, concurrent.futures
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 from datetime import timedelta
 
-pgm_version = "2.14"
-pgm_date = "Jan-14-2017 21:53"
+pgm_version = "2.15"
+pgm_date = "Jan-16-2017 11:56"
 
 # keep trace of file/directory stats, extensions, and total number of directories processed
 all_stats = {}
