@@ -6,8 +6,23 @@ tcpscan.py
 
 A simple, multi-threaded IPv4 TCP port scanner for Python 3.5
 
-For help, run: tcpscan.py -h
+examples
+--------
+1) python3 tcpscan.py -h
+     (help, shows all options)
 
+2) python3 tcpscan.py -v 172.16.51.0/29
+    (basic usage, scans 500 of the most common ports)
+
+3) python3 tcpscan.py -p1-65535 -v 172.16.51.0/29
+    (scan all ports, from 172.16.51.0 to 172.16.51.7)
+
+4) python3 tcpscan.py -v -r 4 -o net.csv 172.16.51.0/26
+     (show stats at end, show status every 4 seconds to STDERR, save to CSV file)
+
+5) python3 tcpscan.py -v -r 4 172.16.51.0/24 > net.txt
+    (save results to net.txt, show status every 4 seconds to STDERR)
+    (useful for large ranges with many open ports)
 """
 
 import sys
@@ -21,8 +36,8 @@ from collections import defaultdict
 from datetime import datetime
 from random import shuffle
 
-pgm_version = "1.20"
-pgm_date = "Dec-30-2016 16:27"
+pgm_version = "1.21"
+pgm_date = "Jan-16-2017 20:15"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 50
