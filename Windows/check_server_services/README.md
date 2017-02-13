@@ -28,4 +28,8 @@ that are not running, it will attempt to restart them.  Included in the
 script is the ability to ping servers, which is useful for servers in
 a DMZ where services can't be queried via a PowerShell script.
 
+*New in Feb 2017*
 
+Low disk space is now checked for on any systems where a service is
+verified.  Either less than 10 GB or less than 7% will trigger a low 
+disk space warning.
