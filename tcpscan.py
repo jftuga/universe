@@ -38,8 +38,8 @@ from datetime import datetime
 from random import shuffle
 from queue import Queue
 
-pgm_version = "1.22"
-pgm_date = "Apr-26-2017 23:36"
+pgm_version = "1.25"
+pgm_date = "Apr-26-2017 23:54"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 90
@@ -210,14 +210,6 @@ def scan_one_port(ip: str, port:str) -> bool:
                     fp_output.flush()
             
         sock.close()
-        if runtime_stats:
-            now = int(time.time())
-            if (now-runtime_stats_last_timestamp) >= runtime_stats:
-                runtime_stats_last_timestamp = now
-                pps = (ports_scanned-runtime_stats_last_port_count) / runtime_stats
-                print("[%s]\thosts:%s\tports:%s\tports/sec:%s" % (time.strftime("%Y-%m-%d %H:%M:%S"),hosts_scanned,ports_scanned,int(pps)), file=sys.stderr)
-                runtime_stats_last_port_count = ports_scanned
-
         return valid
 
     except KeyboardInterrupt:
@@ -243,15 +235,16 @@ def disp_runtime():
     global ports_scanned, runtime_stats, runtime_stats_last_timestamp, runtime_stats_last_port_count
     global disp_runtime_queue
 
+    t = threading.Timer(runtime_stats,disp_runtime)
+    disp_runtime_queue.put(t)
+    t.start()
+
     if not ports_scanned: return
     
     pps = (ports_scanned-runtime_stats_last_port_count) / runtime_stats
     print("[%s]\thosts:%s\tports:%s\tports/sec:%s" % (time.strftime("%Y-%m-%d %H:%M:%S"),hosts_scanned,ports_scanned,int(pps)), file=sys.stderr)
     runtime_stats_last_port_count = ports_scanned
 
-    t = threading.Timer(runtime_stats,disp_runtime)
-    disp_runtime_queue.put(t)
-    t.start()
 
 #############################################################################################
 
