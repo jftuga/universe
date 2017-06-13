@@ -32,8 +32,8 @@ from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 from datetime import timedelta
 
-pgm_version = "2.16"
-pgm_date = "May-06-2017 20.21"
+pgm_version = "2.17"
+pgm_date = "Jun-13-2017 16:43"
 
 # keep trace of file/directory stats, extensions, and total number of directories processed
 all_stats = {}
@@ -517,8 +517,7 @@ def main() -> None:
     if args.regexpr:
         build_regexpr_excludes(args.regexpr)
 
-    if args.status:
-        stats_update = int(args.status)
+    stats_update = int(args.status) if args.status else 100
 
     # make sure long numbers are appropriately separated with commas
     locale.setlocale(locale.LC_ALL, '')
