@@ -29,8 +29,8 @@ import socket
 import argparse
 
 pgm_name = "putty_session_generator"
-pgm_version = "1.00"
-pgm_date = "Jun-14-2017 10:32"
+pgm_version = "1.01"
+pgm_date = "Jun-14-2017 13:53"
 
 header="Windows Registry Editor Version 5.00"
 
@@ -40,7 +40,7 @@ session_template="""
 [HKEY_CURRENT_USER\SOFTWARE\SimonTatham\PuTTY\Sessions\__SESSION__]
 "Present"=dword:00000001
 "HostName"="__IPADDRESS__"
-"LogFileName"="c:\\temp\\putty\\&H--&Y&M&D.&T.log"
+"LogFileName"="c:\\\\temp\\\\putty\\\\&H--&Y&M&D.&T.log"
 "LogType"=dword:00000001
 "LogFileClash"=dword:ffffffff
 "LogFlush"=dword:00000001
