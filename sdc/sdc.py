@@ -1,4 +1,4 @@
-"""
+r"""
 sdc.py - Save Device Config
 John Taylor
 Jun-16-2017
@@ -63,7 +63,7 @@ print(password)
 
 #################################################################################################
 # Example config.ini:
-"""
+r"""
 # devices: comma-delimited list of host names or ip addresses
 # port: optional, default is DEFAULT_PORT (22)
 # verbose: optional [True|False]; when True, see more details about the SSH connection
@@ -102,7 +102,7 @@ config_fname=configs&O&T&O&V&O&V--&Y&M&D.&H&N&S.log
 
 #################################################################################################
 # schema.sql
-"""
+r"""
 drop table if exists files;
 create table if not exists files (
 	id                   integer primary key autoincrement,
