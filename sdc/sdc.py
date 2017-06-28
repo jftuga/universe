@@ -10,8 +10,10 @@ The purpose of this script is to:
 
 All of the options / settings are in the config.ini file.
 
-The program has two modes: a server mode and a client mode. When the server starts, it generates a random UDP port number (that it listens on) and a random UUID.  
-These are sent in an email as the first portion of an Authentication string.  The remaining portion is a password which is a secret that only you should know.
+The program has two modes: a server mode and a client mode. 
+When the server starts, it generates a random UDP port number (that it listens on) and a random UUID.  
+These are sent in an email as the first portion of an Authentication string.  
+The remaining portion is a password which is a secret that only you should know.
 These 3 comma-delimited items make up the full Authentication string.
 
 Example:
@@ -21,7 +23,7 @@ Example:
 To run the server:
 
 cd \sdc\save_device_config
-if not exist sdc.sqlite3 sqlite3 sdc.sqlite3 < schema.sql
+if not exist database.sqlite3 sqlite3.exe database.sqlite3 < schema.sql
 python sdc.py -c config.ini
 
 Once this is running, it will send an email with the first portion of the Authentication string and then listen on the chosen UDP port number.
@@ -59,11 +61,11 @@ key = Fernet.generate_key() # save this key to your password database/keychain
 f = Fernet(key)
 password = f.encrypt(b"your_device_password_goes_here")
 print(password)
-"""
+
 
 #################################################################################################
 # Example config.ini:
-r"""
+
 # devices: comma-delimited list of host names or ip addresses
 # port: optional, default is DEFAULT_PORT (22)
 # verbose: optional [True|False]; when True, see more details about the SSH connection
@@ -96,13 +98,13 @@ device_list=switch1, switch2, switch3
 username=admin
 password=gAAAmf09fsd0MDS0FMFFDM0DK94307GJ09TJ54_jfsdsdfFSEF439843NFOsfhnsfh349834409tdfklgndfgFLSD43FDGN=s===
 config_fname=configs&O&T&O&V&O&V--&Y&M&D.&H&N&S.log
-"""
+
 # end of example config.ini
 #################################################################################################
 
 #################################################################################################
 # schema.sql
-r"""
+
 drop table if exists files;
 create table if not exists files (
 	id                   integer primary key autoincrement,
@@ -141,9 +143,10 @@ create trigger trig_files_did after insert on files
 begin
 	update files set db_insert_date = datetime('now','localtime') where rowid = new.rowid;
 end;
-"""
+
 # end of schema.sql
 #################################################################################################
+"""
 
 # TODO: make sure listening UDP port in not already in use
 # TODO: retention on conf files
@@ -172,8 +175,8 @@ import time
 import uuid
 
 pgm_name="sdc"
-pgm_version="1.01"
-pgm_date="Jun-22-2017"
+pgm_version="1.02"
+pgm_date="Jun-28-2017 10:50:21"
 
 DEFAULT_PORT = 22
 INTERNAL_INI_SECTIONS = ( "global", "smtp" )
@@ -418,12 +421,15 @@ def verify_config_settings(cfg:configparser.ConfigParser) -> bool:
         err(4020, "Section 'global' done not contain the required 'database' definition.", fatal=True)
     if "sleep_time" not in cfg["global"]:
         err(4020, "Section 'global' done not contain the required 'sleep_time' definition.", fatal=True)
+    if "runtime_log" not in cfg["global"]:
+        err(4024, "Section 'global' done not contain the required 'runtime_log' definition.", fatal=True)
     if "server" not in cfg["smtp"]:
         err(4021, "Section 'smtp' done not contain the required 'server' definition.", fatal=True)
     if "from" not in cfg["smtp"]:
         err(4022, "Section 'smtp' done not contain the required 'from' definition.", fatal=True)
     if "to_list" not in cfg["smtp"]:
         err(4023, "Section 'smtp' done not contain the required 'to_list' definition.", fatal=True)
+    
 
     dbname = cfg["global"]["database"]
     if not os.path.exists(dbname):
@@ -759,7 +765,7 @@ def main() -> int:
         err(8552, "Unable to open file: %s" % (confname), fatal=True)
 
     creds = get_credentials(config)
-    sleep_fname = "sleeping.txt"
+    sleep_fname = config["global"]["runtime_log"]
 
     while True:
         localtime = time.localtime()
@@ -767,7 +773,11 @@ def main() -> int:
         for section in config.sections():
             if section in INTERNAL_INI_SECTIONS:
                 continue
-            process_section(localtime,creds,config,section)
+            try:
+                process_section(localtime,creds,config,section)
+            except:
+                msg = "%s\n%s" % (sys.exc_info()[0],sys.exc_info()[1])
+                err(5710,msg)
 
         sleep_time = int(config["global"]["sleep_time"])
         if sleep_time < 10: sleep_time=10
