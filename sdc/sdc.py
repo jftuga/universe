@@ -155,17 +155,21 @@ end;
 #################################################################################################
 
 from cryptography.fernet import Fernet
+from device_catalog import device_commands, re_device_excludes, re_device_includes
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from netmiko import ConnectHandler
 import argparse
+import concurrent.futures
 import configparser
+import csv
 import difflib
 import getpass
 import hashlib
 import os
 import os.path
 import random
+import re
 import smtplib
 import socket
 import socketserver
@@ -175,18 +179,12 @@ import time
 import uuid
 
 pgm_name="sdc"
-pgm_version="1.02"
-pgm_date="Jun-28-2017 10:50:21"
+pgm_version="1.10"
+pgm_date="Jul-2-2017 10:35:52"
 
 DEFAULT_PORT = 22
 INTERNAL_INI_SECTIONS = ( "global", "smtp" )
 VERBOSE_OUTPUT = True
-
-device_commands = {}
-device_commands["hp_procurve"]    = ( "no page", "SAVE::show run" )
-device_commands["hp_comware"]     = ( "SAVE::display current-configuration", )
-device_commands["paloalto_panos"] = ( "set cli pager off", "SAVE::show config running")
-device_commands["ubiquiti_edge"]  = ( "configure", "run terminal length 9999", "SAVE::run show configuration all", "exit")
 
 #################################################################################################
 
@@ -384,6 +382,25 @@ def database_insert(cfg:configparser.ConfigParser, section:str, device_name:str,
 #################################################################################################
 
 def removed_previous_identical_config(cfg:configparser.ConfigParser, section:str,device_name:str,current_fname:str,current_sha1:str) -> tuple:
+    """Delete a newly downloaded config file if it is the same as the previous config file; files compared with SHA1.
+
+    Args:
+        cfg: a configfile parser object
+
+        section: the config file section as denoted between [] in the .ini file
+
+        device_name: an individual device from a sections's device_list entry
+
+        current_fname: file name from the current run
+
+        current_sha1: SHA1 check sum of current_fname
+
+    Returns:
+        A tuple:
+            True if the config file is the same as the previous file, False otherwise
+            None when files are the same; the name of the old config file when the configs are different
+            (the old file name is needed so that a diff can be performed)
+    """
     dbname = cfg["global"]["database"]
     conn = sqlite3.connect(dbname)
     c = conn.cursor()
@@ -420,15 +437,19 @@ def verify_config_settings(cfg:configparser.ConfigParser) -> bool:
     if "database" not in cfg["global"]:
         err(4020, "Section 'global' done not contain the required 'database' definition.", fatal=True)
     if "sleep_time" not in cfg["global"]:
-        err(4020, "Section 'global' done not contain the required 'sleep_time' definition.", fatal=True)
+        err(4021, "Section 'global' done not contain the required 'sleep_time' definition.", fatal=True)
     if "runtime_log" not in cfg["global"]:
-        err(4024, "Section 'global' done not contain the required 'runtime_log' definition.", fatal=True)
+        err(4022, "Section 'global' done not contain the required 'runtime_log' definition.", fatal=True)
+    if "max_threads" not in cfg["global"]:
+        err(4023, "Section 'global' done not contain the required 'max_threads' definition.", fatal=True)
+
+        
     if "server" not in cfg["smtp"]:
-        err(4021, "Section 'smtp' done not contain the required 'server' definition.", fatal=True)
+        err(4030, "Section 'smtp' done not contain the required 'server' definition.", fatal=True)
     if "from" not in cfg["smtp"]:
-        err(4022, "Section 'smtp' done not contain the required 'from' definition.", fatal=True)
+        err(4031, "Section 'smtp' done not contain the required 'from' definition.", fatal=True)
     if "to_list" not in cfg["smtp"]:
-        err(4023, "Section 'smtp' done not contain the required 'to_list' definition.", fatal=True)
+        err(4032, "Section 'smtp' done not contain the required 'to_list' definition.", fatal=True)
     
 
     dbname = cfg["global"]["database"]
@@ -533,6 +554,142 @@ def send_email_diff(cfg:configparser.ConfigParser, section:str, device_name:str,
 
 #################################################################################################
 
+def check_re_excludes(device_type:str, line:str) -> int:
+    re_list = []
+
+    c = csv.reader(re_device_excludes[device_type],dialect='excel',skipinitialspace=True)
+    for expr in c:
+        if len(expr[0]):
+            re_list.append( re.compile(expr[0]) )
+
+    for expr in re_list:
+        match = expr.findall(line)
+        if match:
+            return 1
+    return 0
+
+#################################################################################################
+
+def check_re_includes(device_type:str, line:str) -> int:
+    re_list = []
+
+    match_list = []
+    if type(re_device_includes[device_type]) is str: 
+        match_list.append(re_device_includes[device_type])
+    else:
+        match_list = re_device_includes[device_type]
+    
+    c = csv.reader(match_list,dialect='excel',skipinitialspace=True)
+    for expr in c:
+        if not len(expr):
+            #print("--- skipping")
+            continue
+        print("=== expr: %s" % (expr), len(expr))
+        if len(expr[0]):
+            re_list.append( re.compile(expr[0]) )
+
+    for expr in re_list:
+        match = expr.findall(line)
+        if match:
+            return 1
+    return 0
+
+
+#################################################################################################
+
+def executor_thread(now:time.struct_time, cfg:configparser.ConfigParser, section:str, device_name:str, device_type:str, usr:str, pw:str, port:int) -> int:
+    """Run the device commands listed in device_catalog.py.  This is the function that will run concurrently
+       up to max_threads devices at once.
+       Create "obj" which is suitable for netmiko's ConnectHandler from device_type,usr,pw,port (and ip)
+       Call run_device_commands() with obj, which will return a list of strings
+       Open a new switch conf file, substituting any macros
+       Write the returned list of strings to this file, but filter out any lines matching
+           check_re_includes or check_re_excludes
+       Save a database entry with section, device name, filename, file size, SHA1, etc.
+
+    Args:
+        now: the current time, to be used in file name macro substitution
+
+        cfg: the main configfile parser object
+
+        section: the current .ini section being processed
+
+        device_name: the current device from the device_list 
+
+        device_type: the device_type from the .ini file
+
+        usr: the username used to log into the device
+
+        pw: the device password, already decrypted
+
+        port: the SSH port number
+    """
+
+    total = 0
+
+    ip = get_ip_address(device_name)
+    if not ip:
+        err(8011,"Unable to resolve IP address: %s" % (device_name))
+        return
+    
+    obj = {}
+    obj["device_type"] = device_type
+    obj["ip"] = ip
+    obj["username"] = usr
+    obj["password"] = pw
+    obj["port"] = port
+    verbose = False
+    # FIXME this is not working correctly...
+    if verbose or 1:
+        # obj["verbose"] = verbose
+        obj["verbose"] = True
+    #if VERBOSE_OUTPUT: print("o-type:", type(obj))
+
+    results = run_device_commands(obj,device_type)  
+    if len(results):
+        try:
+            fname = replace_macros(cfg[section]["config_fname"], now, section, device_name, device_type, ip, port)
+        except:
+            msg = "%s\n%s" % (sys.exc_info()[0],sys.exc_info()[1])
+            err(7803,msg,fatal=True)
+
+        if VERBOSE_OUTPUT: print("Creating dir: %s" % os.path.dirname(fname))
+        os.makedirs( os.path.dirname(fname), mode=0o777, exist_ok=True)
+        if VERBOSE_OUTPUT: print("Saving file: %s" % fname)
+        with open(fname,"w") as fp:
+            for entry in results:
+                for line in entry.splitlines():
+                    valid = 0
+                    valid += check_re_includes(device_type, line)
+                    invalid = 0
+                    invalid += check_re_excludes(device_type, line)
+                    if not invalid and valid:
+                        fp.write("%s\n" % (line))
+                    else:
+                        if VERBOSE_OUTPUT: print("Excluding line: %s" % (line))
+
+        sha1 = hashlib.sha1(open(fname,'rb').read()).hexdigest()
+        fsize = os.path.getsize(fname)
+        identical, old_fname = removed_previous_identical_config(cfg,section,device_name,fname,sha1)
+        
+        same_as_prev_cfg = 1 if identical else 0
+        database_insert(cfg, section, device_name, device_type, usr, ip, port, fname, sha1, fsize, same_as_prev_cfg )
+        if old_fname:
+            diff_name = create_html_diff(old_fname, fname)
+            send_email_diff(cfg, section, device_name, diff_name)
+
+        total += 1
+    #end of if stmt
+    
+    if VERBOSE_OUTPUT: print()
+    obj["username"] = ""
+    obj["password"] = ""
+    del(obj)
+
+    return total
+
+#################################################################################################
+
 def process_section(now:time.struct_time, crypto:Fernet, cfg:configparser.ConfigParser, section:str) -> int:
     """This is the main function used to process each ini section. It creates an object, obj, suitable for
        the ConnectHandler function. If a diff is detected, save the diff to a file (replacing any macros.
@@ -579,66 +736,27 @@ def process_section(now:time.struct_time, crypto:Fernet, cfg:configparser.Config
     port = DEFAULT_PORT if "port" not in cfg[section] else cfg[section]["port"]
     verbose_str = "False" if "verbose" not in cfg[section] else cfg[section]["verbose"]
     verbose = False if "false" == verbose_str.lower() else True
-    
-    total = 0
-    for device_name in all_devices:
-        ip = get_ip_address(device_name)
-        if not ip:
-            err(8011,"Unable to resolve IP address: %s" % (device_name))
-            continue
-        
-        obj = {}
-        obj["device_type"] = device_type
-        obj["ip"] = ip
-        obj["username"] = usr
-        obj["password"] = pw
-        obj["port"] = port
-        verbose = False
-        # FIXME this is not working correctly...
-        if verbose or 1:
-            # obj["verbose"] = verbose
-            obj["verbose"] = True
-        #if VERBOSE_OUTPUT: print("o-type:", type(obj))
 
-        results = run_device_commands(obj,device_type)  
-        if len(results):
-            try:
-                fname = replace_macros(cfg[section]["config_fname"], now, section, device_name, device_type, ip, port)
-            except:
-                msg = "%s\n%s" % (sys.exc_info()[0],sys.exc_info()[1])
-                err(7803,msg,fatal=True)
+    # threading
+    max_threads = int(cfg["global"]["max_threads"])
+    max_threads = 2 if max_threads < 1 or max_threads > 50 else max_threads
+    if VERBOSE_OUTPUT: print("max_threads: %s" % (max_threads))
 
-            if VERBOSE_OUTPUT: print("Creating dir: %s" % os.path.dirname(fname))
-            os.makedirs( os.path.dirname(fname), mode=0o777, exist_ok=True)
-            if VERBOSE_OUTPUT: print("Saving file: %s" % fname)
-            with open(fname,"w") as fp:
-                for entry in results:
-                    fp.write("%s\n" % (entry))
-            sha1 = hashlib.sha1(open(fname,'rb').read()).hexdigest()
-            fsize = os.path.getsize(fname)
-            identical, old_fname = removed_previous_identical_config(cfg,section,device_name,fname,sha1)
-            
-            same_as_prev_cfg = 1 if identical else 0
-            database_insert(cfg,section, device_name, device_type, usr, ip, port, fname, sha1, fsize, same_as_prev_cfg )
-            if old_fname:
-                diff_name = create_html_diff(old_fname, fname)
-                send_email_diff(cfg, section, device_name, diff_name)
-
-            total += 1
-        #end of if stmt
-        
-        if VERBOSE_OUTPUT: print()
-        obj["username"] = ""
-        obj["password"] = ""
-        del(obj)
-    # end of for loop    
+    # normally set to True; for debugging set this to False
+    use_threading = False
+    if use_threading:
+        with concurrent.futures.ThreadPoolExecutor(max_threads) as executor:
+            {executor.submit(executor_thread,now, cfg, section, device_name, device_type, usr, pw, port): device_name for device_name in all_devices}
+    else:
+        for device_name in all_devices:
+            executor_thread(now, cfg, section, device_name, device_type, usr, pw, port)
 
     usr = ""
     pw = ""
     del(usr)
     del(pw)
        
-    return total
+    return None
                 
 #################################################################################################
 
@@ -707,7 +825,6 @@ def send_auth_string(auth:str) -> bool:
 
     Return:
         True upon a successful authentication key, False otherwise
-
     """
     slots = auth.split(",")
     if len(slots) != 3:
@@ -765,6 +882,7 @@ def main() -> int:
         err(8552, "Unable to open file: %s" % (confname), fatal=True)
 
     creds = get_credentials(config)
+    creds = None
     sleep_fname = config["global"]["runtime_log"]
 
     while True:
@@ -773,6 +891,7 @@ def main() -> int:
         for section in config.sections():
             if section in INTERNAL_INI_SECTIONS:
                 continue
+
             try:
                 process_section(localtime,creds,config,section)
             except:
