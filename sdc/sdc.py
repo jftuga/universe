@@ -155,7 +155,7 @@ end;
 #################################################################################################
 
 from cryptography.fernet import Fernet
-from device_catalog import device_commands, re_device_excludes, re_device_includes
+from device_catalog import device_commands, re_device_excludes, re_device_includes, re_filter_type
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from netmiko import ConnectHandler
@@ -179,8 +179,8 @@ import time
 import uuid
 
 pgm_name="sdc"
-pgm_version="1.10"
-pgm_date="Jul-2-2017 10:35:52"
+pgm_version="1.11"
+pgm_date="Jul-2-2017 22:25"
 
 DEFAULT_PORT = 22
 INTERNAL_INI_SECTIONS = ( "global", "smtp" )
@@ -554,57 +554,54 @@ def send_email_diff(cfg:configparser.ConfigParser, section:str, device_name:str,
 
 #################################################################################################
 
-def check_re_excludes(device_type:str, line:str) -> int:
+def re_filter(re_includes: tuple, entry:str, filter_type:re_filter_type) -> str:
+    """Only include lines matching the re_includes reg expr list when filter_type=include
+       Then exclude lines in the re_excludes reg expr list when filter_type=exclude
+
+       Args:
+            re_includes: a list of regular expressions
+
+            entry: an entire multi-line config file (including nested \n charcters)
+
+            filter_type: either include or exclude
+
+       Returns:
+            a config file after all of the reg expr have been processed
+    """
+    result = []
     re_list = []
 
-    c = csv.reader(re_device_excludes[device_type],dialect='excel',skipinitialspace=True)
-    for expr in c:
-        if len(expr[0]):
-            re_list.append( re.compile(expr[0]) )
-
-    for expr in re_list:
-        match = expr.findall(line)
-        if match:
-            return 1
-    return 0
-
-#################################################################################################
-
-def check_re_includes(device_type:str, line:str) -> int:
-    re_list = []
-
-    match_list = []
-    if type(re_device_includes[device_type]) is str: 
-        match_list.append(re_device_includes[device_type])
-    else:
-        match_list = re_device_includes[device_type]
+    for expr in re_includes:
+        re_list.append( re.compile(expr))
     
-    c = csv.reader(match_list,dialect='excel',skipinitialspace=True)
-    for expr in c:
-        if not len(expr):
-            #print("--- skipping")
-            continue
-        print("=== expr: %s" % (expr), len(expr))
-        if len(expr[0]):
-            re_list.append( re.compile(expr[0]) )
+    if filter_type == re_filter_type.include:
+        for line in entry.splitlines():
+            for expr in re_list:
+                search = expr.search(line)
+                if search:
+                    result.append(line)
+                    break
+    
+    if filter_type == re_filter_type.exclude:
+        result = entry.splitlines()
+        for line in entry.splitlines():
+            for expr in re_list:
+                search = expr.search(line)      
+                if search:
+                    result.remove(line)
+                    break
 
-    for expr in re_list:
-        match = expr.findall(line)
-        if match:
-            return 1
-    return 0
-
+    return "\n".join(result)
 
 #################################################################################################
 
-def executor_thread(now:time.struct_time, cfg:configparser.ConfigParser, section:str, device_name:str, device_type:str, usr:str, pw:str, port:int) -> int:
+def executor_thread(now:time.struct_time, cfg:configparser.ConfigParser, section:str, device_name:str, device_type:str, usr:str, pw:str, port:int, re_includes:tuple, re_excludes:tuple) -> int:
     """Run the device commands listed in device_catalog.py.  This is the function that will run concurrently
        up to max_threads devices at once.
        Create "obj" which is suitable for netmiko's ConnectHandler from device_type,usr,pw,port (and ip)
        Call run_device_commands() with obj, which will return a list of strings
        Open a new switch conf file, substituting any macros
-       Write the returned list of strings to this file, but filter out any lines matching
-           check_re_includes or check_re_excludes
+       Write the returned list of strings to this file
        Save a database entry with section, device name, filename, file size, SHA1, etc.
 
     Args:
@@ -623,6 +620,10 @@ def executor_thread(now:time.struct_time, cfg:configparser.ConfigParser, section
         pw: the device password, already decrypted
 
         port: the SSH port number
+
+        re_includes: list of reg expr to match against & include on a match
+
+        re_excludes: list of reg expr to match against & exclude on a match
     """
 
     total = 0
@@ -658,15 +659,15 @@ def executor_thread(now:time.struct_time, cfg:configparser.ConfigParser, section
         if VERBOSE_OUTPUT: print("Saving file: %s" % fname)
         with open(fname,"w") as fp:
             for entry in results:
-                for line in entry.splitlines():
-                    valid = 0
-                    valid += check_re_includes(device_type, line)
-                    invalid = 0
-                    invalid += check_re_excludes(device_type, line)
-                    if not invalid and valid:
-                        fp.write("%s\n" % (line))
-                    else:
-                        if VERBOSE_OUTPUT: print("Excluding line: %s" % (line))
+                if re_includes:
+                    config_data = re_filter(re_includes,entry,re_filter_type.include)
+                else:
+                    config_data = entry
+
+                if re_excludes:
+                    config_data = re_filter(re_excludes,config_data,re_filter_type.exclude)
+                
+                fp.write("%s" % (config_data))
 
         sha1 = hashlib.sha1(open(fname,'rb').read()).hexdigest()
         fsize = os.path.getsize(fname)
@@ -737,19 +738,32 @@ def process_section(now:time.struct_time, crypto:Fernet, cfg:configparser.Config
     verbose_str = "False" if "verbose" not in cfg[section] else cfg[section]["verbose"]
     verbose = False if "false" == verbose_str.lower() else True
 
+    # include / exclude reg expr for this device type
+    # 1 element entries are returned as strings where as multi-element entries are tuples
+    # therefore make them all tuples
+
+    re_includes = re_device_includes[device_type] if device_type in re_device_includes else None
+    if type(re_includes) is str:
+        print("incl is str")
+        #re_includes = (re_includes,)
+    re_excludes = re_device_excludes[device_type] if device_type in re_device_excludes else None
+    if type(re_excludes) is str:
+        #print("excl is str")
+        re_excludes = (re_excludes,)
+
     # threading
     max_threads = int(cfg["global"]["max_threads"])
     max_threads = 2 if max_threads < 1 or max_threads > 50 else max_threads
     if VERBOSE_OUTPUT: print("max_threads: %s" % (max_threads))
 
     # normally set to True; for debugging set this to False
-    use_threading = False
+    use_threading = True
     if use_threading:
         with concurrent.futures.ThreadPoolExecutor(max_threads) as executor:
-            {executor.submit(executor_thread,now, cfg, section, device_name, device_type, usr, pw, port): device_name for device_name in all_devices}
+            {executor.submit(executor_thread, now, cfg, section, device_name, device_type, usr, pw, port, re_includes, re_excludes): device_name for device_name in all_devices}
     else:
         for device_name in all_devices:
-            executor_thread(now, cfg, section, device_name, device_type, usr, pw, port)
+            executor_thread(now, cfg, section, device_name, device_type, usr, pw, port, re_includes, re_excludes)
 
     usr = ""
     pw = ""
@@ -892,11 +906,15 @@ def main() -> int:
             if section in INTERNAL_INI_SECTIONS:
                 continue
 
-            try:
+            use_debugging = False
+            if use_debugging:
                 process_section(localtime,creds,config,section)
-            except:
-                msg = "%s\n%s" % (sys.exc_info()[0],sys.exc_info()[1])
-                err(5710,msg)
+            else:
+                try:
+                    process_section(localtime,creds,config,section)
+                except:
+                    msg = "%s\n%s" % (sys.exc_info()[0],sys.exc_info()[1])
+                    err(5710,msg)
 
         sleep_time = int(config["global"]["sleep_time"])
         if sleep_time < 10: sleep_time=10
