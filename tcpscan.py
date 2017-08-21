@@ -38,8 +38,8 @@ from datetime import datetime
 from random import shuffle
 from queue import Queue
 
-pgm_version = "1.26"
-pgm_date = "Aug-21-2017 09:29"
+pgm_version = "1.27"
+pgm_date = "Aug-21-2017 15:16"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 90
@@ -411,9 +411,10 @@ def main() -> None:
     if args.dns:
         resolve_dns = True
     
+    # all_results and now_all_opened are used when args.loopstop=True
     all_results = {}
-    t1 = datetime.now()
     now_all_opened = False
+    t1 = datetime.now()
     for loop in range(0,loop_seconds):
         for tmp in hosts:
             my_ip = "%s" % (tmp)
@@ -433,7 +434,6 @@ def main() -> None:
                 break
 
             if args.loopstop:
-                #print("X:", all_results.values())
                 if False not in all_results.values():
                     args.loop = False
                     now_all_opened = True
