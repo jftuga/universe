@@ -38,8 +38,8 @@ from datetime import datetime
 from random import shuffle
 from queue import Queue
 
-pgm_version = "1.25"
-pgm_date = "Apr-26-2017 23:54"
+pgm_version = "1.26"
+pgm_date = "Aug-21-2017 09:29"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 90
@@ -108,7 +108,7 @@ def get_port_list(ports:str) -> list:
 
 #############################################################################################
 
-def scan_one_host(ip: str, ports: str) -> None:
+def scan_one_host(ip: str, ports: str) -> dict:
     """Scan a host for the given open ports.
     
     Args:
@@ -118,7 +118,8 @@ def scan_one_host(ip: str, ports: str) -> None:
             list format (a,b,c,d).
 
     Returns:
-        Does not return any values.
+        A dict with key=port number or 0 on error
+                    val=True|False  (true=opened;false=closed or error)
 
     """
 
@@ -136,15 +137,20 @@ def scan_one_host(ip: str, ports: str) -> None:
     if not connect_timeout:
         connect_timeout = connect_timeout_lan if is_ip_on_lan(ip) else connect_timeout_wan
 
+    all_results = {}
     if args.shuffleports: shuffle(port_list)
     with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
         alpha = {executor.submit(scan_one_port, ip, current_port): current_port for current_port in port_list}
         for future in concurrent.futures.as_completed(alpha):
-            pass
+            if future.done():
+                port, is_opened = future.result()
+                all_results[port] = is_opened
+
+    return all_results
 
 #############################################################################################
 
-def scan_one_port(ip: str, port:str) -> bool:
+def scan_one_port(ip: str, port:str) -> tuple:
     """Scan the given host for one open port.
     
     Args:
@@ -153,8 +159,7 @@ def scan_one_port(ip: str, port:str) -> bool:
         port: A TCP port number 1-65535 (as a string).
 
     Returns:
-        Returns True if the port is open and
-        False otherwise.
+        Returns (1) port number; (2) True if the port is open, otherwise False
 
     """
 
@@ -165,7 +170,7 @@ def scan_one_port(ip: str, port:str) -> bool:
     port = int(port)
     if port > 65535:
         print("\nError: Port is greater than 65535\n")
-        return False
+        return (0,False)
 
     if port in skipped_port_list:
         if args.verbose:
@@ -175,7 +180,7 @@ def scan_one_port(ip: str, port:str) -> bool:
                 fp_output.write("%s\n" % (line.replace("\t",",")))
                 fp_output.flush()
         skipped_ports += 1
-        return False
+        return (0,False)
 
     try: 
         ports_scanned += 1
@@ -210,15 +215,15 @@ def scan_one_port(ip: str, port:str) -> bool:
                     fp_output.flush()
             
         sock.close()
-        return valid
+        return (port,valid)
 
     except KeyboardInterrupt:
         print("You pressed Ctrl+C")
-        return False
+        return (0,False)
 
     except socket.error:
         print("Couldn't connect to server %s on port %s" % (ip,port))
-        return False
+        return (0,False)
 
 #############################################################################################
 
@@ -338,6 +343,7 @@ def main() -> None:
     parser.add_argument("-v", "--verbose", help="output statistics", action="store_true")
     parser.add_argument("-r", "--runtime", help="periodically display runtime stats every RUNTIME seconds to STDERR")
     parser.add_argument("-l", "--loop", help="repeat the port scan LOOP times, 0 for continuous")
+    parser.add_argument("-ls", "--loopstop", help="repeat the port scan until all port(s) are open", action="store_true")
     parser.add_argument("-L", "--listen", help="listen on given TCP port(s) for incoming connection(s) [mutually exclusive]", action="store_true")
 
 
@@ -369,6 +375,9 @@ def main() -> None:
     if args.ports:
         if "all" == args.ports.lower():
             args.ports = "1-65535"
+
+    if args.loopstop:
+        args.loop = "0"
 
     loop_seconds = int(args.loop) if args.loop else 1
     if 0 == loop_seconds:
@@ -402,7 +411,9 @@ def main() -> None:
     if args.dns:
         resolve_dns = True
     
+    all_results = {}
     t1 = datetime.now()
+    now_all_opened = False
     for loop in range(0,loop_seconds):
         for tmp in hosts:
             my_ip = "%s" % (tmp)
@@ -416,10 +427,21 @@ def main() -> None:
                 skipped_hosts += 1
                 continue
             try:
-                scan_one_host( "%s" % (my_ip), port_list )
+                all_results = scan_one_host( "%s" % (my_ip), port_list )
             except KeyboardInterrupt:
                 print("\nYou pressed Ctrl+C")
                 break
+
+            if args.loopstop:
+                #print("X:", all_results.values())
+                if False not in all_results.values():
+                    args.loop = False
+                    now_all_opened = True
+                    print( chr(7) ) # beep
+                    
+        if now_all_opened:
+            print("[%s] completed loops:%s" % (time.strftime("%Y-%m-%d %H:%M:%S"), loop+1))
+            break
 
         if loop_seconds and args.loop:
             try:
