@@ -7,7 +7,7 @@
 apt-get install build-essential
 
 # install Python 3 Dependencies
-sudo apt-get install libreadline-dev libncurses-dev liblzma-dev libssl-dev libdb-dev libsqlite3-dev sqlite3
+sudo apt-get install libreadline-dev libncurses-dev liblzma-dev libssl-dev libdb-dev libbz2-dev libsqlite3-dev sqlite3
 
 
 # Download and Unpack
