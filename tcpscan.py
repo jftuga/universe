@@ -38,8 +38,8 @@ from datetime import datetime
 from random import shuffle
 from queue import Queue
 
-pgm_version = "1.27"
-pgm_date = "Aug-21-2017 15:16"
+pgm_version = "1.28"
+pgm_date = "Aug-21-2017 19:32"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 90
@@ -295,7 +295,7 @@ def tcp_listen(port:int) -> None:
     host = "0.0.0.0"
 
     print("Listening for incoming TCP connections on %s:%s" % (host,port))
-    print("Press Ctrl-Break to exit.")
+    print("Press Ctrl-C, Ctrl-\\ or Ctrl-Break to exit.")
     server = socketserver.TCPServer((host, port), tcp_connect_handler)
     server.serve_forever()
 
@@ -414,6 +414,7 @@ def main() -> None:
     # all_results and now_all_opened are used when args.loopstop=True
     all_results = {}
     now_all_opened = False
+
     t1 = datetime.now()
     for loop in range(0,loop_seconds):
         for tmp in hosts:
