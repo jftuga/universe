@@ -8,7 +8,7 @@ Aug-29-2016
 Displays basic computer information
 
 Compile with:
-csc.exe 
+csc.exe /target:exe /optimize basic_info.cs
 
 */
 
