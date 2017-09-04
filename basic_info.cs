@@ -7,9 +7,13 @@ Aug-29-2016
 
 Displays basic computer information
 
+Compile with:
+csc.exe 
+
 */
 
 using System;
+using System.Net.NetworkInformation;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Win32;
@@ -56,6 +60,14 @@ namespace basic_info
         		uptime = Truncate(uptime,uptime.Length-3);
         	}
         	Console.WriteLine("uptime: {0}",uptime);
+
+            String cpu = "";
+            cpu = GetCPU();
+            Console.WriteLine("cpu   : {0}",cpu);
+
+            String mem = "";
+            mem = GetMemory();
+            Console.WriteLine("mem   : {0}",mem);            
 		}
 
 	    public static List<string> GetUsers()
@@ -113,6 +125,70 @@ namespace basic_info
         	if (string.IsNullOrEmpty(value)) return value;
         	return value.Length <= maxLength ? value : value.Substring(0, maxLength); 
     	}
+
+        public static string GetCPU()
+        {
+            String cpu = "";
+            using(ManagementObjectSearcher win32Proc = new ManagementObjectSearcher("select * from Win32_Processor"))        
+            {
+                foreach (ManagementObject obj in win32Proc.Get())
+                {
+                    cpu = obj["Name"].ToString();
+                    if( cpu.Length > 3) {
+                        break;
+                    }
+                }
+            }
+            return cpu;
+        }
+
+        public static string GetMemory()
+        {
+            String capacity = "";
+            String speed = "";
+            long total_sz = 0;
+            double total_gb = 0;
+            using(ManagementObjectSearcher win32Proc = new ManagementObjectSearcher("select * from Win32_PhysicalMemory"))        
+            {
+                foreach (ManagementObject obj in win32Proc.Get())
+                {
+                    capacity = obj["Capacity"].ToString();
+                    long sz = Convert.ToInt64(capacity);
+                    total_sz += sz;
+
+                    if( 0 == speed.Length) {
+                        speed = obj["Speed"].ToString();
+                        //speed += "MHz";
+                    }
+                }
+                total_gb = (total_sz) / 1073741824; //1024**3
+            }
+            return String.Format("{0:0.00} GB @ {1}Mhz", total_gb, speed);
+        }
+
+        /*
+        // work in progress...
+        public static String GetIPAddresses()
+        {
+                foreach (NetworkInterface netInterface in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    String description = ""
+                    Console.WriteLine("Name: " + netInterface.Name);
+                    Console.WriteLine("Description: " + netInterface.Description);
+                    Console.WriteLine("Addresses: ");
+                    IPInterfaceProperties ipProps = netInterface.GetIPProperties();
+                    foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
+                    {
+                        String currentAddress = addr.Address.ToString();
+                        if( ! currentAddress.Contains("::")) {
+                            Console.WriteLine(" " + currentAddress);
+                        }
+                    }
+                    Console.WriteLine("");
+                }
+                return "";
+        }
+        */
 
     } // class
 } // namespace
