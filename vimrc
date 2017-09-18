@@ -1,7 +1,7 @@
 set nocompatible
-source $VIMRUNTIME/vimrc_example.vim
-source $VIMRUNTIME/mswin.vim
-behave mswin
+" source $VIMRUNTIME/vimrc_example.vim
+" source $VIMRUNTIME/mswin.vim
+" behave mswin
 
 
 map #1 0vwhxi<tab><esc>j
@@ -9,9 +9,11 @@ map #2 0vwhxi<tab><tab><esc>j
 map #3 0vwhxi<tab><tab><tab><esc>j
 map #4 0vwhxi<tab><tab><tab><tab><esc>j
 
-set expandtab
-set tabstop=4
-set shiftwidth=4
+set shiftwidth=4    " Use indents of 4 spaces
+set expandtab       " Tabs are spaces
+set tabstop=4       " An indentation every four columns
+set softtabstop=4   " Let backspace delete indent
+
 set ai
 set showmatch
 " ic -> ignorecase
