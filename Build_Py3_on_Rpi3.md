@@ -21,4 +21,9 @@ cd Python-3.6.3
 ./configure --prefix=${HOME}/opt --enable-optimizations
 make -j 4
 make install
+
+# To ensure that you are always running this version,
+# add this line to your .bash_profile
+export PATH=${HOME}/opt/bin:${PATH}
+
 ```
