@@ -74,6 +74,8 @@ namespace basic_info
             Console.WriteLine("IPv4     : {0}",all_ip);
 		}
 
+        // a possible future improvement:
+        // https://stackoverflow.com/a/22610367/452281
 	    public static List<string> GetUsers()
         {
             List<string> users = new List<string>();
