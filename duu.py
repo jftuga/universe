@@ -31,16 +31,17 @@ import os, re, sys, locale, argparse, time, statistics, concurrent.futures
 from os.path import join, getsize, isdir, splitext
 from collections import defaultdict
 from datetime import timedelta
+from typing import List, Dict, DefaultDict, Tuple, Any
 
-pgm_version = "2.17"
-pgm_date = "Jun-13-2017 16:43"
+pgm_version = "2.18"
+pgm_date = "Oct-04-2017 15:45"
 
 # keep trace of file/directory stats, extensions, and total number of directories processed
-all_stats = {}
-all_extensions = {}
+all_stats: Dict[str, Tuple] = {}
+all_extensions: Dict[str, Dict] = {}
 all_dir_count = 0
 all_exclude_count = 0
-all_regexpr_excludes = []
+all_regexpr_excludes: List[Any] = []
 all_csv_list = []
 
 #############################################################################
@@ -63,7 +64,6 @@ def safe_print(data:str,isError:bool=False) -> None:
 
 #############################################################################
 
-
 def fmt(n:float,precision:int=2,no_comma:bool=False) -> str:
     """Adds commas to a number and truncates it's precision
         Example: 112233.4455 into 112,233.45
@@ -81,22 +81,22 @@ def fmt(n:float,precision:int=2,no_comma:bool=False) -> str:
 
     tmp = "%." + "%s" % (precision) + "f"
     if no_comma:
-        return int(n)
+        return str(n)
     return locale.format(tmp, n, grouping=True)
 
 #############################################################################
 
-def display_threaded_extensions() -> None:
+def display_threaded_extensions() -> int:
     """Iterates through all_extensions to find the extension with the longest length: longest
         also combines all sublists of all_extensions into one large list: combined
 
     Returns:
-        None
+        The number of unique extensions
     """
 
     longest = ""
     longest_len = 0
-    combined = defaultdict(int)
+    combined: DefaultDict[str, int] = defaultdict(int)
     for key in all_extensions:
         for val in all_extensions[key]:
             combined[val] += all_extensions[key][val]
@@ -132,7 +132,7 @@ def display_extentions(longest_ext:str,extensions:dict) -> None:
 
 #############################################################################
 
-def display_threaded_summary(unique_ext_count:int=0) -> (int, int):
+def display_threaded_summary(unique_ext_count:int=0) -> Tuple[int, int]:
     """Sums the counts for each entry in all_stats: file,error,directory,total_bytes
         (all_stats includes these stats for each individual directory)
 
@@ -146,7 +146,7 @@ def display_threaded_summary(unique_ext_count:int=0) -> (int, int):
     err_count = 0
     dir_count = 0
     total_bytes = 0
-    stats_file_sizes = []
+    stats_file_sizes: List[int] = []
 
     for entry in all_stats.keys():
         file_count += all_stats[entry][0]
@@ -286,7 +286,7 @@ def display_file_stats(stats_file_sizes:list) -> None:
 
 #############################################################################
 
-def display_runtime_statistics(time_start:time.time, time_end:time.time, file_count:int, dir_count:int, threads:int) -> None:
+def display_runtime_statistics(time_start:float, time_end:float, file_count:int, dir_count:int, threads:int) -> None:
     """Outputs information about how long the pgm ran for
 
     Args:
@@ -300,8 +300,8 @@ def display_runtime_statistics(time_start:time.time, time_end:time.time, file_co
         None
     """
     time_elapsed = timedelta( seconds= (time_end - time_start))
-    fcount_per_sec = 0 if not file_count else file_count / (time_end - time_start)
-    dcount_per_sec = 0 if dir_count < 2 else dir_count / (time_end - time_start)
+    fcount_per_sec = 0 if not file_count else file_count / ((time_end+0.001) - time_start) # avoid div-by-zero by adding 0.001
+    dcount_per_sec = 0 if dir_count < 2 else dir_count / ((time_end+0.001) - time_start)
     
     print("elapsed time  : %s" % (time_elapsed))
     print("files per sec : %s" % (fmt(fcount_per_sec)))
@@ -352,7 +352,7 @@ def get_disk_threaded_usage(root_dir:str=".",ext:bool=False,verbose:bool=True,st
     if norecurse:
         walker = os.walk(root_dir)
         first = next(walker)
-        get_disk_usage(first,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,1,exclude,regexpr,csv_output,stats_update)
+        get_disk_usage(first,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,True,1,exclude,regexpr,csv_output,stats_update)
     else:
         with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
             {executor.submit(get_disk_usage,walker,ext,verbose,status,skipdot,stats,bare,norecurse,verbose_files,human,max_workers,exclude,regexpr,csv_output,stats_update): walker for walker in os.walk(root_dir)}
@@ -371,7 +371,7 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
     Returns:
         None
     """
-    global all_stats, all_extensions, all_dir_count, all_exclude_count, all_csv_list
+    global all_stats, all_extensions, all_dir_count, all_exclude_count, all_csv_list, all_regexpr_excludes
 
     root, dirs, files = walker
     if skipdot and os.sep + "." in root:
@@ -398,7 +398,7 @@ def get_disk_usage(walker:tuple,ext:bool=False,verbose:bool=True,status:bool=Fal
                 all_exclude_count += 1
                 return
 
-    curr_exten_list = defaultdict(int)
+    curr_exten_list: DefaultDict[str, int] = defaultdict(int)
     longest_ext = ""
     total = 0
     dir_total = 0
@@ -483,7 +483,7 @@ def build_regexpr_excludes(regexpr:str) -> int:
 
 ######################################################################
 
-def main() -> None:
+def main() -> int:
     """Process command-line arguments, get directory usage, print results
 
     Returns:
