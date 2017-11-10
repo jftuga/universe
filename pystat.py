@@ -2,44 +2,63 @@
 
 # pystat.py
 # -John Taylor
-# Jul-22-2015
+# Nov-10-2017
 
-# display metadata of file given on cmd line
+# display and/or set metadata of file given on cmd line
 
-import sys, os, os.path, time
+import argparse
+import os
+import os.path
+import sys
+import time
 
-def usage():
-	print()
-	print("Usage:")
-	print("%s [ filename ]" % sys.argv[0])
-	print()
-
-def convert_to_date(t):
+def convert_to_date(t:float) -> str:
 	return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(t))
 
-
-def examine_file(fname):
+def examine_file(fname:str,access:str,modify:str):
 	statinfo = os.stat(fname)
-	#print( statinfo )
+	#print(statinfo)
+
+	if modify and access:
+		os.utime(fname,(float(access),float(modify)))
+		print("%s: access and modify times have been changed." % (fname))
+		return
+
+	if modify:
+		access = statinfo.st_atime
+		os.utime(fname,(float(access),float(modify)))
+		print("%s: modify time has been changed." % (fname))
+		return
+
+	if access:
+		modify = statinfo.st_mtime
+		os.utime(fname,(float(access),float(modify)))
+		print("%s: access time has been changed." % (fname))
+		return
+
 	print()
 	print("name  : %s" % (fname))
 	print("size  : {:,}".format(statinfo.st_size))
-	print("ctime : %s" % (convert_to_date(statinfo.st_ctime)))
-	print("mtime : %s" % (convert_to_date(statinfo.st_mtime)))
-	print("atime : %s" % (convert_to_date(statinfo.st_atime)))
+	print("ctime : %s : %s" % (convert_to_date(statinfo.st_ctime),statinfo.st_ctime))
+	print("mtime : %s : %s" % (convert_to_date(statinfo.st_mtime),statinfo.st_mtime))
+	print("atime : %s : %s" % (convert_to_date(statinfo.st_atime),statinfo.st_atime))
 	print()
 
 def main():
-	if len(sys.argv) != 2:
-		return usage()
+	parser = argparse.ArgumentParser(description="Get / Set file time stamps")
+	parser.add_argument("fname", help="file name")
+	parser.add_argument("-a", help="set file access time, fmt: secs.nsecs")
+	parser.add_argument("-m", help="set file modification time, fmt: secs.nsecs")
+	args = parser.parse_args()
 
-	fname = sys.argv[1]
-	if not os.path.exists(fname):
+	if not os.path.exists(args.fname):
 		print()
-		print("File not found: %s" % (fname))
+		print("File not found: %s" % (args.fname))
 		print()
 		return
-	examine_file(fname)
+	
+	examine_file(args.fname,args.a,args.m)
 
 
-main()
+if __name__ == "__main__":
+	main()
