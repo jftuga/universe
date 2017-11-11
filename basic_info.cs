@@ -189,7 +189,7 @@ namespace basic_info
             List<string> ip_list = new List<string>();
             foreach (NetworkInterface netInterface in NetworkInterface.GetAllNetworkInterfaces())
             {
-                if( netInterface.NetworkInterfaceType.ToString() != "Ethernet" || netInterface.OperationalStatus.ToString() == "Down") {
+                if( (netInterface.NetworkInterfaceType.ToString() != "Wireless80211" && netInterface.NetworkInterfaceType.ToString() != "Ethernet") || netInterface.OperationalStatus.ToString() == "Down") {
                     continue;
                 }
                 
@@ -202,7 +202,7 @@ namespace basic_info
                 foreach (UnicastIPAddressInformation addr in ipProps.UnicastAddresses)
                 {
                     String currentAddress = addr.Address.ToString();
-                    if( ! currentAddress.Contains("::")) {
+                    if( ! currentAddress.Contains(":")) {
                         //Console.WriteLine(" " + currentAddress);
                         if(currentAddress.StartsWith("169.254.")) {
                             continue;
