@@ -57,7 +57,7 @@ def main():
 	for fn in args.fname:
 		all_files += glob.glob(fn)
 
-	for fn in args.fname:
+	for fn in all_files:
 		if not os.path.exists(fn):
 			print()
 			print("File not found: %s" % (fn))
