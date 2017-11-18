@@ -42,22 +42,25 @@ def examine_file(fname:str,access:str,modify:str):
 	print("ctime : %s : %s" % (convert_to_date(statinfo.st_ctime),statinfo.st_ctime))
 	print("mtime : %s : %s" % (convert_to_date(statinfo.st_mtime),statinfo.st_mtime))
 	print("atime : %s : %s" % (convert_to_date(statinfo.st_atime),statinfo.st_atime))
-	print()
+
 
 def main():
 	parser = argparse.ArgumentParser(description="Get / Set file time stamps")
-	parser.add_argument("fname", help="file name")
+	parser.add_argument("fname", help="file name", nargs="+")
 	parser.add_argument("-a", help="set file access time, fmt: secs.nsecs")
 	parser.add_argument("-m", help="set file modification time, fmt: secs.nsecs")
 	args = parser.parse_args()
 
-	if not os.path.exists(args.fname):
-		print()
-		print("File not found: %s" % (args.fname))
-		print()
-		return
+	for fn in args.fname:
+		if not os.path.exists(fn):
+			print()
+			print("File not found: %s" % (fn))
+			print()
+			return
 	
-	examine_file(args.fname,args.a,args.m)
+	for fn in args.fname:
+		examine_file(fn,args.a,args.m)
+	print()
 
 
 if __name__ == "__main__":
