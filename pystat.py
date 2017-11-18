@@ -64,7 +64,7 @@ def main():
 			print()
 			return
 	
-	for fn in args.fname:
+	for fn in all_files:
 		examine_file(fn,args.a,args.m)
 	print()
 
