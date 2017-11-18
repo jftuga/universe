@@ -2,11 +2,12 @@
 
 # pystat.py
 # -John Taylor
-# Nov-10-2017
+# Nov-17-2017
 
-# display and/or set metadata of file given on cmd line
+# display and/or set metadata of file names given on cmd line
 
 import argparse
+import glob
 import os
 import os.path
 import sys
@@ -50,6 +51,11 @@ def main():
 	parser.add_argument("-a", help="set file access time, fmt: secs.nsecs")
 	parser.add_argument("-m", help="set file modification time, fmt: secs.nsecs")
 	args = parser.parse_args()
+
+	# wildcard support
+	all_files = []
+	for fn in args.fname:
+		all_files += glob.glob(fn)
 
 	for fn in args.fname:
 		if not os.path.exists(fn):
