@@ -16,7 +16,7 @@ import time
 def convert_to_date(t:float) -> str:
 	return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(t))
 
-def examine_file(fname:str,access:str,modify:str):
+def examine_file(fname:str,access:str,modify:str,inode_dev:bool):
 	statinfo = os.stat(fname)
 	#print(statinfo)
 
@@ -43,6 +43,9 @@ def examine_file(fname:str,access:str,modify:str):
 	print("ctime : %s : %s" % (convert_to_date(statinfo.st_ctime),statinfo.st_ctime))
 	print("mtime : %s : %s" % (convert_to_date(statinfo.st_mtime),statinfo.st_mtime))
 	print("atime : %s : %s" % (convert_to_date(statinfo.st_atime),statinfo.st_atime))
+	if inode_dev:
+		print("inode : %s" % (statinfo.st_ino))
+		print("device: %s" % (statinfo.st_dev))
 
 
 def main():
@@ -50,6 +53,7 @@ def main():
 	parser.add_argument("fname", help="file name", nargs="+")
 	parser.add_argument("-a", help="set file access time, fmt: secs.nsecs")
 	parser.add_argument("-m", help="set file modification time, fmt: secs.nsecs")
+	parser.add_argument("-id", help="also display inode and device identifiers", action="store_true")
 	args = parser.parse_args()
 
 	# wildcard support
@@ -65,7 +69,7 @@ def main():
 			return
 	
 	for fn in all_files:
-		examine_file(fn,args.a,args.m)
+		examine_file(fn,args.a,args.m,args.id)
 	print()
 
 
