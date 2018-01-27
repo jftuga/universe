@@ -10,6 +10,11 @@
 - To get a single property value: ```(Get-Process -PID $PID).Name```
 - To search for command: ```Get-Command -Noun process```
 
+### Misc
+
+- to create a string containing a line of X's: ```$line = "x"*77```
+- to change the Powershell window title: ```$host.UI.RawUI.WindowTitle = $host.UI.RawUI.WindowTitle ="PS Window @ " + (get-date -Format g)```
+
 ## History
 
 - h -> Get-History
@@ -17,6 +22,7 @@
 - ```Get-History | ? -Property Id -gt 190```
 - ```Get-History | ? CommandLine -like "dir*"```
 - ```h |? CommandLine -like dir*```
+- to run the fifth command from history: ```r 5```
 
 See also: https://blogs.technet.microsoft.com/heyscriptingguy/2011/01/18/use-powershell-history-to-speed-repetitive-commands/
 
@@ -94,16 +100,17 @@ See also: https://blogs.technet.microsoft.com/heyscriptingguy/2014/07/08/getting
 
 ## Group-Object
 
-- Recommended: ```Group-Object -NoElement -CaseSensitive``
+- Recommended: ```Group-Object -NoElement -CaseSensitive```
 
-## Out-GridView
-- ```Get-History | Out-GridView -PassThru  | Invoke-Expression```
-- ```Get-Process | Out-GridView -PassThru  | Invoke-Expression```
-- ```Get-Command | Out-GridView -PassThru  | Get-Help –ShowWindow```
-- ```Get-Help about* | Out-GridView  -PassThru |  Get-Help –ShowWindow```
-- ```Powershell.exe -Command "Get-Service | Out-GridView -Wait"```
+## Compare-Object
 
-See also: https://mcpmag.com/articles/2016/02/17/creating-a-gui-using-out-gridview.aspx
+- To see all files that have the same name and length:
+
+```powershell
+$reference = Get-ChildItem C:\Windows\System32 -File
+$difference = Get-ChildItem C:\Windows\SysWOW64 -File
+Compare-Object $reference $difference -Property Name, Length -IncludeEqual -ExcludeDifferent
+```
 
 ## Select-String
 
@@ -116,22 +123,33 @@ See also: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershel
 
 _____
 
+## Out-GridView
+- ```Get-History | Out-GridView -PassThru  | Invoke-Expression```
+- ```Get-Process | Out-GridView -PassThru  | Invoke-Expression```
+- ```Get-Command | Out-GridView -PassThru  | Get-Help –ShowWindow```
+- ```Get-Help about* | Out-GridView  -PassThru |  Get-Help –ShowWindow```
+- ```Powershell.exe -Command "Get-Service | Out-GridView -Wait"```
+
+See also: https://mcpmag.com/articles/2016/02/17/creating-a-gui-using-out-gridview.aspx
+_____
+
 ## $Profile => C:\Users\jftuga\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
 
 ```powershell
 function of($fname) { $input | Out-File -Encoding ascii $fname }
 
 <#
-pssus()
--------
+pssus: PowerShell Sort => Unique => Sort
+----------------------------------------
 # of Items, Time(s), Time(m:s)
-100k, 10, 0:10
-200k, 26, 0:26
-300k, 73, 1:13
-500k, 222, 3:42
+100000,  10,  0:10
+200000,  26,  0:26
+300000,  73,  1:13
+500000, 222,  3:42
 
-A much faster equivalent (500k in 3s; 8.5m in 52s):
+A much faster equivalent (500k rows in 3s; 8.5m rows in 52s):
 gsort.exe -S 3000000 - | uniq.exe -c | gsort.exe -n -k1,1r -k2,2 -S 3000000
+downloaded these EXEs from: https://github.com/bmatzelle/gow
 
 #>
 function pssus() {
@@ -149,4 +167,5 @@ function Test-Elevated {
 ## To Do
 
 - help about_comparison_operators
+- Export-Csv, ConvertTo-Csv (pg. 87-88)
 
