@@ -81,14 +81,20 @@ See also: https://blogs.technet.microsoft.com/heyscriptingguy/2014/07/08/getting
 ## Sort-Object (pg. 79)
 
 - alias: sort -> Sort-Object
+- sorts by unicode sorting conventions, which are different than latin-1
 - ```dir | sort LastWriteTime –Descending```
 - ```get-process| sort ProcessName``` *vs.* ```get-process| sort ProcessName, Id```
+- sort first column (Count) *Desceding*, and then second column (Name) *Ascending*: 
+    - ```Sort-Object -Property @{Expression = {$_.Count}; Ascending = $false}, @{Expression= {$_.Name}; Ascending = $true}```
 
-## To Do
+## Measure-Object
 
-- Group-Object
-- Measure-Object
-- help about_comparison_operators
+- ```6,9,3,9,2,5,8,4,8,5 | Measure-Object -Average -Sum -Minimum -Maximum```
+- similar to *wc*: ```Get-Content .\test.txt | Measure-Object -Character -Line -Word```
+
+## Group-Object
+
+- Recommended: ```Group-Object -NoElement -CaseSensitive``
 
 ## Out-GridView
 - ```Get-History | Out-GridView -PassThru  | Invoke-Expression```
@@ -138,5 +144,9 @@ function Test-Elevated {
   $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
   $prp.IsInRole($adm)
 }
-
 ```
+
+## To Do
+
+- help about_comparison_operators
+
