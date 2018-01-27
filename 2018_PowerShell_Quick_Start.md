@@ -107,3 +107,36 @@ See also: https://mcpmag.com/articles/2016/02/17/creating-a-gui-using-out-gridvi
 - To search all files in a single directory: ```dir | sls DiReCtoRY```
 
 See also: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/select-string
+
+_____
+
+## $Profile => C:\Users\jftuga\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
+
+```powershell
+function of($fname) { $input | Out-File -Encoding ascii $fname }
+
+<#
+pssus()
+-------
+# of Items, Time(s), Time(m:s)
+100k, 10, 0:10
+200k, 26, 0:26
+300k, 73, 1:13
+500k, 222, 3:42
+
+A much faster equivalent (500k in 3s; 8.5m in 52s):
+gsort.exe -S 3000000 - | uniq.exe -c | gsort.exe -n -k1,1r -k2,2 -S 3000000
+
+#>
+function pssus() {
+     $input | Group-Object -NoElement -CaseSensitive | Sort-Object -Property @{Expression = {$_.Count}; Ascending = $false}, @{Expression= {$_.Name}; Ascending = $true} | Format-Table -AutoSize -HideTableHeaders
+}
+
+function Test-Elevated {
+  $wid = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+  $prp = New-Object System.Security.Principal.WindowsPrincipal($wid)
+  $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
+  $prp.IsInRole($adm)
+}
+
+```
