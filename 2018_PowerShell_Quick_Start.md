@@ -162,6 +162,8 @@ function Test-Elevated {
   $adm = [System.Security.Principal.WindowsBuiltInRole]::Administrator
   $prp.IsInRole($adm)
 }
+
+$host.UI.RawUI.WindowTitle = $(if (Test-Elevated) {"[ADMIN] "} else {""}) + $env:username.ToLower() + "@" + $env:computername.ToLower() + " "  + (get-date -Format g)
 ```
 
 ## To Do
