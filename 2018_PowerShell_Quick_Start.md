@@ -151,6 +151,22 @@ _____
 
 ```powershell
 function of($fname) { $input | Out-File -Encoding ascii $fname }
+function rf($fname) { [System.IO.File]::ReadLines($fname) }
+
+function Get-Frequency() {
+    $freq = New-Object "System.Collections.Generic.Dictionary[string,int]"
+    foreach( $line in $input) {
+        $val = $freq[$line]
+        if( $val ) {
+            $freq[$line] = $val + 1
+        } else {
+            $freq.Add($line,1)
+        }
+    }
+    $result = $freq.GetEnumerator() | Sort-Object -Property @{Expression = {$_.Value}; Ascending = $false}, @{Expression= {$_.Name}; Ascending = $true} | Format-Table -AutoSize -HideTableHeaders -Property Value, Key
+    [System.GC]::Collect()
+    $result
+}
 
 <#
 pssus: PowerShell Sort => Unique => Sort
