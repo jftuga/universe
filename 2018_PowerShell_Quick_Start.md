@@ -60,17 +60,17 @@ See also: https://docs.microsoft.com/en-us/dotnet/api/system.management.automati
 - **ForEach** is perfect if you have plenty of memory, want the best performance, and do not care about passing the output to another command via the pipeline.
 - **ForEach-Object** (with its aliases % and **ForEach**) take input from the pipeline. Although it is slower to process everything, it gives you the benefit of **Begin**, **Process**, and **End** blocks. In addition, it allows you to stream the objects to another command via the pipeline.
 
-Other ideas:
+**Other ideas:**
 
-Only use the ForEach-Object cmdlet if you are concerned about saving memory as follows:
+Only use the **ForEach-Object** cmdlet if you are concerned about saving memory as follows:
 
 - While the loop is running (because only one of the evaluated objects is loaded into memory at one time).
 - If you want to start seeing output from your loop faster (because the cmdlet starts the loop the second it has the first object in a collection versus waiting to gather them all like - the ForEach construct).
 
-You should use the ForEach loop construct in the following situations:
+You should use the **ForEach** loop construct in the following situations:
 
 - If you want the loop to finish executing faster (notice I said finish faster and not start showing results faster).
-- You want to Break/Continue out of the loop (because you can’t with the ForEach-Object cmdlet).
+- You want to Break/Continue out of the loop (because you can’t with the **ForEach-Object** cmdlet).
 
 See also: https://blogs.technet.microsoft.com/heyscriptingguy/2014/07/08/getting-to-know-foreach-and-foreach-object/
 
