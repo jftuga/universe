@@ -74,6 +74,7 @@ You should use the **ForEach** loop construct in the following situations:
 - If you want the loop to finish executing faster (notice I said finish faster and not start showing results faster).
 - You want to Break/Continue out of the loop (because you can’t with the **ForEach-Object** cmdlet).
 
+See also: https://blogs.technet.microsoft.com/heyscriptingguy/2014/05/18/weekend-scripter-powershell-speed-improvement-techniques/
 
 ## Where-Object
 
