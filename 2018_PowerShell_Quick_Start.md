@@ -65,7 +65,7 @@ See also: https://docs.microsoft.com/en-us/dotnet/api/system.management.automati
 Only use the **ForEach-Object** cmdlet if you are concerned about saving memory as follows:
 
 - While the loop is running (because only one of the evaluated objects is loaded into memory at one time).
-- If you want to start seeing output from your loop faster (because the cmdlet starts the loop the second it has the first object in a collection versus waiting to gather them all like - the ForEach construct).
+- If you want to start seeing output from your loop faster (because the cmdlet starts the loop the second it has the first object in a collection versus waiting to gather them all like - the **ForEach** construct).
 
 You should use the **ForEach** loop construct in the following situations:
 
