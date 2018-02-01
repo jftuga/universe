@@ -1,4 +1,7 @@
-﻿using System;
+﻿// display the number of occurences of the same lines in a file or read from STDIN           
+// 'tbl' key=the line in the file; value=number of occurences
+
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
