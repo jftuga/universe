@@ -222,6 +222,27 @@ dir /s/b/a-d > dir_sb.txt
 dir -Recurse -File | foreach { $_.FullName } | of .\dir_sb.txt
 ```
 
+## Misc
+
+```powershell
+# find all .ps1 files that have been modified within the last 10 days
+dir -Recurse -File *.ps1 | ? { $_.LastWriteTime -gt (Get-Date).AddDays(-10) }
+
+# change the Import-Module search path
+$env:PSModulePath = "$env:PSModulePath;$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
+
+# GUI front-end for Get-Help
+function gh($topic) { Get-Help $topic | Out-GridView -PassThru | Get-Help -ShowWindow }
+
+# Output File: save to a file in ascii to avoid BOM and unicode
+function of($fname) { $input | Out-File -Encoding ascii $fname }
+
+# much faster version of Get-Content (aka 'type')
+function rf($fname) { [System.IO.File]::ReadLines($fname) }
+
+# display all environment variables
+function env() { Get-ChildItem env: }
+```
 
 
 ## To Do
