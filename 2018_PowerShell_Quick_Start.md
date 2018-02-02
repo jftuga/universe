@@ -199,14 +199,27 @@ $host.UI.RawUI.WindowTitle = $(if (Test-Elevated) {"[ADMIN] "} else {""}) + $env
 ## Before and After
 
 ```bash
-gfind . -type d -maxdepth 2 | grep 20 | mawk -F \\ "{print $NF}" | sus
+gfind . -type d -maxdepth 2 | mawk -F \\ "{print $NF}" | sus
+gfind . -type d -maxdepth 2 | mawk -F \\ "{print $NF}" | sus | head -10 | cut -c 9-
+# last line is 130 chars line
 ````
 
 ```powershell
 (dir -Recurse -Depth 1 -Directory).Name | freq
+((dir -Recurse -Depth 1 -Directory).Name | freq | select -First 10).Substring(8)
+((dir -Recurse -Depth 1 -Directory).Name | freq | select -First 10).Substring(8) | foreach { mkdir $_ }
+# last line is 103 chars long (21% shorter)
 ```
 
 ____
+
+```bash
+
+```
+
+```powershell
+
+```
 
 
 
