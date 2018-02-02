@@ -201,6 +201,7 @@ $host.UI.RawUI.WindowTitle = $(if (Test-Elevated) {"[ADMIN] "} else {""}) + $env
 ```bash
 gfind . -type d -maxdepth 2 | mawk -F \\ "{print $NF}" | sus
 gfind . -type d -maxdepth 2 | mawk -F \\ "{print $NF}" | sus | head -10 | cut -c 9-
+gfind . -type d -maxdepth 2 |  mawk -F \\ "{print $NF}" | sus | head -10 | cut -c 9- | mawk "{print 'mkdir ~'$0'~'}" | tr ~ \042 | cmd
 # last line is 130 chars line
 ````
 
