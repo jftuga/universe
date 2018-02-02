@@ -214,12 +214,12 @@ gfind . -type d -maxdepth 2 |  mawk -F \\ "{print $NF}" | sus | head -10 | cut -
 
 ____
 
-```bash
-
+```cmd
+dir /s/b/a-d > dir_sb.txt
 ```
 
 ```powershell
-
+dir -Recurse -File | foreach { $_.FullName } | of .\dir_sb.txt
 ```
 
 
