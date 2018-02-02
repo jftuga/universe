@@ -196,6 +196,20 @@ function Test-Elevated {
 $host.UI.RawUI.WindowTitle = $(if (Test-Elevated) {"[ADMIN] "} else {""}) + $env:username.ToLower() + "@" + $env:computername.ToLower() + " "  + (get-date -Format g)
 ```
 
+## Before and After
+
+```bash
+gfind . -type d -maxdepth 2 | grep 20 | mawk -F \\ "{print $NF}" | sus
+````
+
+```powershell
+(dir -Recurse -Depth 1 -Directory).Name | freq
+```
+
+____
+
+
+
 ## To Do
 
 - help about_comparison_operators
