@@ -265,6 +265,9 @@ dir | foreach { $_.ToString(); ($a = dir $_ | measure -Line).Lines } | of lines.
 # to see what this means, run: 
 (type .\lines.txt | sls -Pattern ^0 -Context 1)[1].Context
 
+# Find all servers that are running the Trend Micro process
+(Get-ADComputer -Filter 'Name -like "SVR*"').Name | % { Get-Process -ComputerName $_ | ? {$_.ProcessName -Contains "NTRTScan" } | ft -Property MachineName }
+
 ```
 
 
