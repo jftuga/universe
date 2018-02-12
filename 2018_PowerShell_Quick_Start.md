@@ -132,8 +132,11 @@ Compare-Object $reference $difference -Property Name, Length -IncludeEqual -Excl
 - This is the PS version of grep and findstr
 - Default search in not case-sensative
 - To search all files in a single directory: ```dir | sls DiReCtoRY```
+- Similar to *grep -n*: sls DiReCtoRY .\files.txt | select linenumber,line | ft -a
 
 See also: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/select-string
+
+See also: https://communary.net/2014/11/10/grep-the-powershell-way/
 
 _____
 
