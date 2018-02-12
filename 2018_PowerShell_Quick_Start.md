@@ -137,6 +137,15 @@ See also: https://docs.microsoft.com/en-us/powershell/module/microsoft.powershel
 
 _____
 
+## Matching with Regular Expressions
+
+- $a = "Cannot find an object with identity: 'jdoe' under: 'DC=uhs,DC=uga,DC=edu'."
+- To get just *jdoe*: $a -match "'(.\*?)'" ; $matches[1]
+
+See also: https://stackoverflow.com/questions/2988880/extricate-a-substring-using-powershell
+
+_____
+
 ## Out-GridView
 - ```Get-History | Out-GridView -PassThru  | Invoke-Expression```
 - ```Get-Process | Out-GridView -PassThru  | Invoke-Expression```
