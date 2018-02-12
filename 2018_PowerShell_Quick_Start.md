@@ -160,9 +160,37 @@ _____
 ## $Profile => C:\Users\jftuga\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1
 
 ```powershell
+# To create a new profile file:
+# New-item –type file –force $profile
+
+# of = Out-File
 function of($fname) { $input | Out-File -Encoding ascii $fname }
+
+# rf - Read-File (this is much faster than using Get-Content)
 function rf($fname) { [System.IO.File]::ReadLines($fname) }
 
+# GUI for Get-Help
+function gh($topic) { Get-Help $topic | Out-GridView -PassThru | Get-Help -ShowWindow }
+
+# directory, sort by date
+function dirod($dname) { Get-ChildItem $dname | Sort-Object LastWriteTime | Select LastWriteTime, Length, Name | format-table @{ n="Modified";e={$_.LastWriteTime};align="right"}, @{n="Size";e={$_.Length.ToString("N0")};align="right" }, Name}
+
+# directory, sort by size
+function diros($dname) { Get-ChildItem -File $dname | Sort-Object Length | Select LastWriteTime, Length, Name | format-table @{ n="Modified";e={$_.LastWriteTime};align="right"}, @{n="Size";e={$_.Length.ToString("N0")};align="right" }, Name}
+
+# reverse the output of a pipeline
+function reverse { 
+ $arr = @($input)
+ [array]::reverse($arr)
+ $arr
+}
+
+# similar to using 'set' under a cmd prompt
+function env() { Get-ChildItem env: }
+
+# An optimized C# version is here: 
+# https://github.com/jftuga/universe/blob/master/freq.cs
+# https://github.com/jftuga/universe/blob/master/bin/freq.exe
 function Get-Frequency() {
     $freq = New-Object "System.Collections.Generic.Dictionary[string,int]"
     foreach( $line in $input) {
@@ -178,24 +206,7 @@ function Get-Frequency() {
     $result
 }
 
-<#
-pssus: PowerShell Sort => Unique => Sort
-----------------------------------------
-# of Items, Time(s), Time(m:s)
-100000,  10,  0:10
-200000,  26,  0:26
-300000,  73,  1:13
-500000, 222,  3:42
-
-A much faster equivalent (500k rows in 3s; 8.5m rows in 52s):
-gsort.exe -S 3000000 - | uniq.exe -c | gsort.exe -n -k1,1r -k2,2 -S 3000000
-downloaded these EXEs from: https://github.com/bmatzelle/gow
-
-#>
-function pssus() {
-     $input | Group-Object -NoElement -CaseSensitive | Sort-Object -Property @{Expression = {$_.Count}; Ascending = $false}, @{Expression= {$_.Name}; Ascending = $true} | Format-Table -AutoSize -HideTableHeaders
-}
-
+# Is PowerShell running as Admin?
 function Test-Elevated {
   $wid = [System.Security.Principal.WindowsIdentity]::GetCurrent()
   $prp = New-Object System.Security.Principal.WindowsPrincipal($wid)
@@ -203,6 +214,22 @@ function Test-Elevated {
   $prp.IsInRole($adm)
 }
 
+# Show all groups a user is a member of with GUI
+function Get-Grps($username_id) {
+  ([ADSISEARCHER]"samaccountname=$username_id").Findone().Properties.memberof -replace '^CN=([^,]+).+$','$1' | Sort-Object | select @{Name="Group Name";expression={$_}} | Out-GridView -Title $username_id
+}
+
+# Show all groups a user is a member
+function Get-Grps2($username_id) {
+  ([ADSISEARCHER]"samaccountname=$username_id").Findone().Properties.memberof -replace '^CN=([^,]+).+$','$1' | Sort-Object | select @{Name="Group Name";expression={$_}}
+}
+
+#######################################################################################################################################################################
+
+# Search path for Import-Module
+$env:PSModulePath = "$env:PSModulePath;$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
+
+# change windows title to: 'user@hostname date/time'  -or-  'user@hostname [DMIN] date/time'
 $host.UI.RawUI.WindowTitle = $(if (Test-Elevated) {"[ADMIN] "} else {""}) + $env:username.ToLower() + "@" + $env:computername.ToLower() + " "  + (get-date -Format g)
 ```
 
