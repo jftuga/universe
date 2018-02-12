@@ -258,7 +258,7 @@ dir | foreach { $_.ToString(); ($a = dir $_ | measure -Line).Lines } | of lines.
 
 (type .\lines.txt | sls -Pattern ^0 -Context 1) | foreach { $_.Context.PreContext} | sls "System Volume Information" -NotMatch | foreach { rmdir $_ }
 # Explanation
-# get one line of context because we need the line before (aka PreContext) 
+# search for 0 at beginning of line and then get one line of context because we need the line before (aka PreContext) 
 # to see what this means, run: 
 (type .\lines.txt | sls -Pattern ^0 -Context 1)[1].Context
 
