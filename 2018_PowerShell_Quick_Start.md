@@ -258,12 +258,12 @@ function env() { Get-ChildItem env: }
 # remove all subdirectories with no files in them
 dir | foreach { $_.ToString(); ($a = dir $_ | measure -Line).Lines } | of lines.txt
 # lines.txt now contains 2 lines per entry: (1) directory name; (2) number of files in that directory
-
 (type .\lines.txt | sls -Pattern ^0 -Context 1) | foreach { $_.Context.PreContext} | sls "System Volume Information" -NotMatch | foreach { rmdir $_ }
 # Explanation
 # search for 0 at beginning of line and then get one line of context because we need the line before (aka PreContext) 
 # to see what this means, run: 
 (type .\lines.txt | sls -Pattern ^0 -Context 1)[1].Context
+# end of remove all subdirectories
 
 # Find all servers that are running the Trend Micro process
 (Get-ADComputer -Filter 'Name -like "SVR*"').Name | % { Get-Process -ComputerName $_ | ? {$_.ProcessName -Contains "NTRTScan" } | ft -Property MachineName }
