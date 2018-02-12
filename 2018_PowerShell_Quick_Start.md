@@ -34,11 +34,9 @@ See also: https://blogs.technet.microsoft.com/heyscriptingguy/2011/01/18/use-pow
 
 ## PowerShell Objects
 
-- Page 69-70:
 - ```$obj = [PSCustomObject]@{ 'Some Name' = "My Value" }```
 
-
-- Page 74:
+- Example:
 
 ```powershell
 $obj = New-Object Object
@@ -82,7 +80,7 @@ See also: https://blogs.technet.microsoft.com/heyscriptingguy/2014/05/18/weekend
 - ```Where-Object [-Property] <String> [[-Value] <Object>]```
 - ```Get-Process | ? -Property Id -lt 1000```
 
-## Select-Object (pg. 77-78)
+## Select-Object
 
 - alias: select -> Select-Object
 - allow a subset of data to be returned
@@ -98,7 +96,7 @@ See also: https://blogs.technet.microsoft.com/heyscriptingguy/2014/05/18/weekend
 - ```get-process | select-object -Property Name -Skip 2 –Last 1```   #return 3rd from end
 - ```get-process | Select Name –Unique``` *vs.* ```get-process | Select Name```
 
-## Sort-Object (pg. 79)
+## Sort-Object
 
 - alias: sort -> Sort-Object
 - sorts by unicode sorting conventions, which are different than latin-1
@@ -278,5 +276,5 @@ dir | foreach { $_.ToString(); ($a = dir $_ | measure -Line).Lines } | of lines.
 ## To Do
 
 - help about_comparison_operators
-- Export-Csv, ConvertTo-Csv (pg. 87-88)
+- Export-Csv, ConvertTo-Csv
 
