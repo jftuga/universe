@@ -3,8 +3,7 @@
 """
 ipinfo.py
 
-Query https://ipinfo.io for IP address info including geographic location when given 
-an IP address, host name or URL
+Query https://ipinfo.io for IP address info including geographic location when given an IP address, host name or URL
 """
 
 import re
@@ -49,7 +48,7 @@ def get_ip_info(ip:str):
 ##########################################################################
 
 def main():
-	if len(sys.argv) != :
+	if len(sys.argv) != 2:
 		print("Usage:")
 		print("%s: [ IP address | host name | URL ]" % (sys.argv[0]))
 		print()
