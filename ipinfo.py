@@ -43,11 +43,6 @@ def resolve(obj):
 
     return (obj, n[2])
 
-    if type(n) is str:
-        return list( n[2] )
-    else:
-        return n[2]
-
 ##########################################################################
 
 def get_ip_info(ip:str, hostname:str) -> str:
