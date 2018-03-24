@@ -27,7 +27,7 @@ import urllib.request
 from collections import defaultdict
 from veryprettytablepatched import VeryPrettyTablePatched
 
-pgm_version = "2.0"
+pgm_version = "2.1"
 
 ##########################################################################
 
@@ -166,7 +166,7 @@ def main():
                 ip_table = future.result()
                 tbl.add_row(build_row(ip_table,my_loc))
 
-    print( tbl.get_string())
+    print( tbl.get_string(sortby="input"))
 
 ##########################################################################
 
