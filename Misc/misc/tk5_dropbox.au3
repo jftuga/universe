@@ -56,7 +56,23 @@ endfunc
 hotkeyset("^q", "trigger_question")
 hotkeyset("^a", "trigger_answer")
 
-while(True)
+global $count
+sleep(3000) ; inital pause at startup
+$count = 1
+while($count < 237)
+	sleep(200)	
+	MouseMove(322,649) ; arrow rt
+	MouseClick("primary")
+	sleep(100)
+	trigger_question()
+
 	sleep(200)
+	MouseMove(1373,649) ; view
+	MouseClick("primary")
+	sleep(100)
+	trigger_answer()
+
+	$count += 1
+	
 wend
 

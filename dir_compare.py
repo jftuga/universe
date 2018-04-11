@@ -22,37 +22,17 @@ example: -x .m:.c:.h:.txt
 improve -s (stats) accuracy
 """
 
+import os, os.path, time, re, argparse, shutil, timeit, operator
+import sys, platform, stat
+import filecmp
+from datetime import datetime
+from itertools import zip_longest
+
 # displayed when running dir_compare.py -h
-pgm_version = "4.20beta2"
-pgm_date = "Dec-1-2015 13:01"
+pgm_version = "4.3"
+pgm_date = "Nov-2-2017 09:39"
 
 ##########################################################################################################
-
-import sys,platform
-
-def py_version_check():
-	min_minor = 3
-
-	msg  = "\n\nError.\n\n"
-	msg += "You must be running Python 3.%s or newer for this script to operate.\n" % (min_minor)
-	msg += "You are running version %s\n\n" % (platform.python_version())
-
-	major = int(platform.python_version_tuple()[0])
-	minor = int(platform.python_version_tuple()[1])
-
-	if major != 3:
-		safe_print(msg)
-		sys.exit(1)
-
-	if minor < min_minor:
-		safe_print(msg)
-		sys.exit(1)
-
-# if version is OK, then main() will be executed next
-py_version_check()
-
-##########################################################################################################
-
 
 # makes it easy to copy/paste a cmd line to compare two non-identical (but similar) files
 # this value is set by the get_default_cmp_pgm() functions
@@ -81,12 +61,7 @@ compiled_regexpr_skip_dirlist = []
 # ratios >= cmp_min_ratio
 # in other words do not show a str_cmp_pgm for files that are not anywhere similar
 # a number closer to 100 means two files are very similar
-cmp_min_ratio = 70.00
-
-# if SequenceMatcher takes longer than tis value, abort and then fall through to the next
-# quickest comparision method
-# this value is in seconds and can be a float
-compute_ratio_timeout = 4.25
+###cmp_min_ratio = 70.00
 
 # skip difference computation for certain file extensions
 want_skip_diff_list = True
@@ -100,8 +75,8 @@ real_quick_diff_list = (".min.css", ".min.js" )
 # do not run similarity computation on file greater than this size
 # 1 MB = 1 * (1024 * 1024)
 # default is 20 MB
-want_file_size_diff_limit = True
-file_size_diff_limit = 20 * ( 1024 * 1024 )
+###want_file_size_diff_limit = True
+###file_size_diff_limit = 20 * ( 1024 * 1024 )
 # hard-coded:end
 
 # verbose: print directory names to STDERR
@@ -137,10 +112,6 @@ elapsed_ratio_time = {}
 # controlled by -H cmd line option
 html_output_dir = None
 
-# Compute a similarity ratio between 2 files
-# controlled by -n cmd line option
-want_ratio_computation = True
-
 # Output format type
 # controlled by -t cmd line option
 tab_file = None
@@ -157,53 +128,38 @@ identical only occurs with -c (compare contents & metadata)
 """
 
 ##########################################################################################################
+
+textchars = bytearray([0,7,8,9,10,12,13,27]) + bytearray(range(0x20, 0x100))
+textdict = dict(zip_longest(textchars,[''],fillvalue=''))
+is_binary_string = lambda data: True if not len(data) else bool(data.translate(textdict))
+
 ##########################################################################################################
-##########################################################################################################
 
-"""
-the Python filecmp implementation is broken
-see also: https://bugs.python.org/issue1234674
+def file_cmp_shallow(fname1:str, fname2:str) -> bool:
+	"""Compare mode, size and mod time
+	"""
 
-this modification returns false for a filecmp() when modification times are different
-"""
+	st1 = os.stat(fname1)
+	st2 = os.stat(fname2)
 
-import filecmp, stat
+	print(st1.st_mode,st1.st_size,st1.st_mtime)
+	print(stat.S_IFMT(st1.st_mode))
 
-_cache = {}
-BUFSIZE = 1024*1024
+	return True if st1.st_mode==st2.st_mode and st1.st_size==st2.st_size and st1.st_mtime==st2.st_mtime else False
 
-def DC_cmp(f1, f2, shallow=True):
-	global _cache
+#############################################################################
 
-	#print("FLAG DC_cmp shallow: %s" % (shallow))
-	s1 = DC_sig(os.stat(f1))
-	s2 = DC_sig(os.stat(f2))
-	
-	if s1[0] != stat.S_IFREG or s2[0] != stat.S_IFREG:
-		#print("FLAG DC_cmp")
-		return False
-	if shallow: 
-		#print("result: %s" % (s1==s2))
-		return s1 == s2
-	if s1[1] != s2[1]:
-		return False
+def file_cmp_exact(fname1:str, fname2:str) -> bool:
+	"""Compare two files byte for byte
+	"""
+	BUFSIZE=1024*1024
 
-	outcome = _cache.get((f1, f2, s1, s2))
-	if outcome is None:
-		outcome = DC_do_cmp(f1, f2)
-		if len(_cache) > 100:	  # limit the maximum size of the cache
-			_cache.clear()
-		_cache[f1, f2, s1, s2] = outcome
-	return outcome
-
-def DC_sig(st):
-	return (stat.S_IFMT(st.st_mode),st.st_size,st.st_mtime)
-
-def DC_do_cmp(f1, f2):
-	global BUFSIZE
+	#if not file_cmp_shallow(fname1, fname2):
+	#	return False
 
 	bufsize = BUFSIZE
-	with open(f1, 'rb') as fp1, open(f2, 'rb') as fp2:
+
+	with open(fname1, 'rb') as fp1, open(fname2, 'rb') as fp2:
 		while True:
 			b1 = fp1.read(bufsize)
 			b2 = fp2.read(bufsize)
@@ -211,178 +167,8 @@ def DC_do_cmp(f1, f2):
 				return False
 			if not b1:
 				return True
-
-def DC_private_cmp(a, b, sh, abs=abs, cmp=DC_cmp):
-	#print("FLAG DC_private_cmp")
-	try:
-		return not abs(DC_cmp(a, b, sh))
-	except OSError:
-		return 2
-
-"""
-therefore: these filecmp functions must be redefined (and overridden) to our own DC_* functions
-"""
-filecmp.cmp = DC_cmp
-filecmp._cmp = DC_private_cmp
-filecmp._sig = DC_sig
-filecmp._do_cmp = DC_do_cmp
-
-##########################################################################################################
-
-"""
-SequenceMatcher in the difflib module contain ratio() and quick_ratio() methods which can take a long time to run with certain input.
-One example is two slightly different versions of jquery.min.js.
-This subclass adds a timeout to these methods.
-The new functionality also has the capability to "fall through" to the next quickest comparison method should a timeout occur.
-If a timeout does occur and using a fall through method is not desired, then -1 is returned for the ratio.
-See also: https://bugs.python.org/issue24904
-"""
-
-import difflib
-from timeit import default_timer as _default_timer
-
-def _calculate_ratio(matches, length):
-    if length:
-        return 2.0 * matches / length
-    return 1.0
-
-class DC_SequenceMatcher(difflib.SequenceMatcher):	
-	def __init__(self,isjunk=None, a='', b='', autojunk=True, timeout=0, fallthrough=0):
-		"""
-		Optional arg timeout should be set to the number of seconds to wait
-        for ratio() or quick_ratio() to complete.  If a timeout seconds is
-        exceeded return -1 for the ratio unless fallthrough is set. This value
-        can be a float.
-
-        Optional arg fallthrough should be set to 1 or 2. If ratio() is
-        called and fallthrough is set to 1, quick_ratio() will be 
-        subsequently called when a timeout occurs. real_quick_ratio()
-        will be called if timeout is set to 2 if another timeout
-        occurs. If quick_ratio() is initially called and fallthrough
-        is set to 1 or 2, real_quick_ratio() will be called when a
-        timeout occurs.
-		"""
-		self.isjunk = isjunk
-		self.a = self.b = None
-		self.autojunk = autojunk
-		self.set_seqs(a, b)
-		# number of seconds to wait for ratio() or quick_ratio() to complete
-		self.timeout = timeout
-		# when ratio() or quick_ratio() times out, fall through to next
-        # 1 or 2 comparison methods: quick_ratio() and then real_quick_ratio()
-		self.fallthrough = fallthrough
-		# used to keep track of a timeout occurence in ratio()
-		self.abort_ratio = False
-
-	def find_longest_match(self, alo, ahi, blo, bhi):
-		a, b, b2j, isbjunk = self.a, self.b, self.b2j, self.bjunk.__contains__
-		besti, bestj, bestsize = alo, blo, 0
-		
-		j2len = {}
-		nothing = []
-		start_time = _default_timer()
-		for i in range(alo, ahi):
-			if self.timeout and (_default_timer() - start_time) > self.timeout:
-				self.abort_ratio = True
-				return (alo, blo, 0)
 			
-			j2lenget = j2len.get
-			newj2len = {}
-			for j in b2j.get(a[i], nothing):
-				if j < blo:
-					continue
-				if j >= bhi:
-					break
-				k = newj2len[j] = j2lenget(j-1, 0) + 1
-				if k > bestsize:
-					besti, bestj, bestsize = i-k+1, j-k+1, k
-			j2len = newj2len
-
-		while besti > alo and bestj > blo and \
-			  not isbjunk(b[bestj-1]) and \
-			  a[besti-1] == b[bestj-1]:
-			besti, bestj, bestsize = besti-1, bestj-1, bestsize+1
-		while besti+bestsize < ahi and bestj+bestsize < bhi and \
-			  not isbjunk(b[bestj+bestsize]) and \
-			  a[besti+bestsize] == b[bestj+bestsize]:
-			bestsize += 1
-
-		while besti > alo and bestj > blo and \
-			  isbjunk(b[bestj-1]) and \
-			  a[besti-1] == b[bestj-1]:
-			besti, bestj, bestsize = besti-1, bestj-1, bestsize+1
-		while besti+bestsize < ahi and bestj+bestsize < bhi and \
-			  isbjunk(b[bestj+bestsize]) and \
-			  a[besti+bestsize] == b[bestj+bestsize]:
-			bestsize = bestsize + 1
-
-		return difflib.Match(besti, bestj, bestsize)
-
-	def get_matching_blocks(self):
-		if self.matching_blocks is not None:
-			return self.matching_blocks
-		la, lb = len(self.a), len(self.b)
-
-		queue = [(0, la, 0, lb)]
-		matching_blocks = []
-		start_time = _default_timer()
-		while queue:
-			alo, ahi, blo, bhi = queue.pop()
-			i, j, k = x = self.find_longest_match(alo, ahi, blo, bhi)
-			if self.timeout and (_default_timer() - start_time) > self.timeout:
-				self.abort_ratio = True
-				return []
-
-			if k:
-				matching_blocks.append(x)
-				if alo < i and blo < j:
-					queue.append((alo, i, blo, j))
-				if i+k < ahi and j+k < bhi:
-					queue.append((i+k, ahi, j+k, bhi))
-		matching_blocks.sort()
-
-		i1 = j1 = k1 = 0
-		non_adjacent = []
-		for i2, j2, k2 in matching_blocks:
-			# Is this block adjacent to i1, j1, k1?
-			if i1 + k1 == i2 and j1 + k1 == j2:
-				k1 += k2
-			else:
-				if k1:
-					non_adjacent.append((i1, j1, k1))
-				i1, j1, k1 = i2, j2, k2
-		if k1:
-			non_adjacent.append((i1, j1, k1))
-
-		non_adjacent.append( (la, lb, 0) )
-		self.matching_blocks = list(map(difflib.Match._make, non_adjacent))
-		return self.matching_blocks
-
-	def ratio(self):
-		matches = sum(triple[-1] for triple in self.get_matching_blocks())
-		if self.abort_ratio:
-			if self.fallthrough > 0:
-				self.fallthrough -= 1
-				return self.quick_ratio()
-			else:
-				return -1
-		return _calculate_ratio(matches, len(self.a) + len(self.b))
-
-##########################################################################################################
-##########################################################################################################
-##########################################################################################################
-
-import os, os.path, time, re, argparse, shutil, timeit, operator
-from datetime import datetime
-from itertools import zip_longest
-
-##########################################################################################################
-
-textchars = bytearray([0,7,8,9,10,12,13,27]) + bytearray(range(0x20, 0x100))
-textdict = dict(zip_longest(textchars,[''],fillvalue=''))
-is_binary_string = lambda data: True if not len(data) else bool(data.translate(textdict))
-
-##########################################################################################################
+#############################################################################
 
 def get_default_cmp_pgm():
 	global str_cmp_pgm
@@ -604,7 +390,7 @@ def recurse_directories(meta, diff_only):
 
 def print_unequal(unequal):
 	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories
-	global want_file_size_diff_limit, file_size_diff_limit, want_skip_diff_list, want_ratio_computation, tab_file
+	global want_file_size_diff_limit, file_size_diff_limit, want_skip_diff_list, tab_file
 
 	safe_print()
 	safe_print("-" * 135)
@@ -631,21 +417,7 @@ def print_unequal(unequal):
 		safe_print("%67s    %10s     %24s" % (make_ellipses(file1,67), a.st_size, g))
 		safe_print("%67s    %10s     %24s" % (make_ellipses(file2,67), a.st_size, h))
 		if len(unequal) > 1: safe_print("%67s    %10s     %24s" % ("."*33, "."*9,"."*24))
-		if tab_file:
-			need_ratio = want_ratio_computation
-			if want_file_size_diff_limit:
-				if os.path.getsize(file1) > file_size_diff_limit or os.path.getsize(file2) > file_size_diff_limit:
-					need_ratio = False
-
-			if want_skip_diff_list:
-				if file_in_skip_diff_list(file1,file2):
-					need_ratio = False
-			
-			if need_ratio:
-				ratio = compute_ratio(file1,file2)
-			else:
-				ratio = 0.0
-
+		if tab_file:		
 			dirname1 = os.path.dirname(file1)
 			dirname2 = os.path.dirname(file2)
 
@@ -653,7 +425,7 @@ def print_unequal(unequal):
 			basename2 = os.path.basename(file2)
 			basename = basename1 if basename1 == basename2 else "????"
 
-			save_tab_file("samemeta_diffdata",dirname1,dirname2,basename,ratio,a.st_size,b.st_size,g,h)
+			save_tab_file("samemeta_diffdata",dirname1,dirname2,basename,a.st_size,b.st_size,g,h)
 
 	safe_print()
 	safe_print()
@@ -663,7 +435,7 @@ def print_unequal(unequal):
 def print_same_contents(same):
 	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories
 	global count_same_contents_files
-	global want_file_size_diff_limit, file_size_diff_limit, want_skip_diff_list, want_ratio_computation, tab_file
+	global want_file_size_diff_limit, file_size_diff_limit, want_skip_diff_list, tab_file
 
 	safe_print()
 	safe_print("-" * 135)
@@ -691,20 +463,6 @@ def print_same_contents(same):
 		safe_print("%67s    %10s     %24s" % (make_ellipses(file2,67), a.st_size, h))
 		safe_print("%67s    %10s     %24s" % ("."*33, "."*9,"."*24))
 		if tab_file:
-			need_ratio = want_ratio_computation
-			if want_file_size_diff_limit:
-				if os.path.getsize(file1) > file_size_diff_limit or os.path.getsize(file2) > file_size_diff_limit:
-					need_ratio = False
-
-			if want_skip_diff_list:
-				if file_in_skip_diff_list(file1,file2):
-					need_ratio = False
-			
-			if need_ratio:
-				ratio = 100.0
-			else:
-				ratio = 0.0
-
 			dirname1 = os.path.dirname(file1)
 			dirname2 = os.path.dirname(file2)
 
@@ -712,7 +470,7 @@ def print_same_contents(same):
 			basename2 = os.path.basename(file2)
 			basename = basename1 if basename1 == basename2 else "????"
 
-			save_tab_file("same_content",dirname1,dirname2,basename,ratio,a.st_size,b.st_size,g,h)
+			save_tab_file("same_content",dirname1,dirname2,basename,a.st_size,b.st_size,g,h)
 
 	safe_print()
 
@@ -720,7 +478,7 @@ def print_same_contents(same):
 ##########################################################################################################
 
 def print_differ(meta,d1,d2):
-	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories, want_ratio_computation, tab_file
+	global count_same_files, count_diff_files, count_unequal_files, count_exclusive_d1, count_exclusive_d2, skipped_files, skipped_directories, tab_file
 
 	if not len(meta.diff_files):
 		safe_print()
@@ -788,42 +546,21 @@ def print_differ(meta,d1,d2):
 			safe_print("",outfile=dest)
 			continue
 
-		need_ratio = want_ratio_computation
-		if want_file_size_diff_limit:
-			if os.path.getsize(file1) > file_size_diff_limit or os.path.getsize(file2) > file_size_diff_limit:
-				need_ratio = False
-
-		if want_skip_diff_list:
-			if file_in_skip_diff_list(file1,file2):
-				need_ratio = False
-			
-		if need_ratio:
-			ratio = compute_ratio(file1,file2)
-		else:
-			ratio = 0.0
-
-		if "-100" == "%d" % (ratio):
-			# set to -1 when a ratio() function times out
-			ratio = -1
-			percent_sign = ""
-		else:
-			percent_sign="%"
 
 		files_processed += 1
-		#import pdb; pdb.set_trace()
 
 		if not shallow_cmp:
 			f1 = "%s%s%s" % (d1,os.sep,f)
 			f2 = "%s%s%s" % (d2,os.sep,f)
-			identical = filecmp.cmp(f1,f2,shallow=False)
+			identical = file_cmp_shallow(f1,f2)
 			#identical = DC_cmp(f1,f2,shallow=False)
 			if identical:
 				actually_same_contents.append( (f1,f2))
 				continue
 
-		safe_print("%67s    %10s%s    %10s%s      %24s%s    %24s%s   %4.2f%s" % (make_ellipses(f,67), a.st_size, x, b.st_size, y,  g,j,  h,k, ratio,percent_sign))
+		safe_print("%67s    %10s%s    %10s%s      %24s%s    %24s%s" % (make_ellipses(f,67), a.st_size, x, b.st_size, y,  g,j,  h,k))
 		if tab_file:
-			save_tab_file("different",d1,d2,f,ratio,a.st_size,b.st_size,g,h)
+			save_tab_file("different",d1,d2,f,a.st_size,b.st_size,g,h)
 
 		if want_cmp_pgm and cmp_min_ratio and str_cmp_pgm:
 			if ratio >= cmp_min_ratio - 0.01:
@@ -925,7 +662,7 @@ def print_same(meta,d1,d2):
 		if not shallow_cmp:
 			f1 = "%s%s%s" % (d1,os.sep,f)
 			f2 = "%s%s%s" % (d2,os.sep,f)
-			identical = filecmp.cmp(f1,f2,shallow=False)
+			identical = file_cmp_shallow(f1,f2,shallow=False)
 			#identical = DC_cmp(f1,f2,shallow=False)
 			if not identical:
 				actually_different.append( (f1,f2))
@@ -947,7 +684,7 @@ def print_same(meta,d1,d2):
 		safe_print("%67s    %10s     %24s" % (make_ellipses(f,67), a.st_size, q))
 		if tab_file:
 			comparison_value = "samemeta" if shallow_cmp else "identical"
-			save_tab_file(comparison_value,d1,d2,f,100.0,a.st_size,b.st_size,q,q)
+			save_tab_file(comparison_value,d1,d2,f,a.st_size,b.st_size,q,q)
 
 
 	safe_print()
@@ -991,9 +728,9 @@ def print_exclusive(meta,dname,d0):
 		safe_print("%67s    %10s     %24s" % (make_ellipses(f,67), a.st_size, q))
 		if tab_file:
 			if "d1" == dname:
-				save_tab_file("exclusive_d1",d0,"",f,"",a.st_size,"",q,"")
+				save_tab_file("exclusive_d1",d0,"",f,a.st_size,"",q,"")
 			else:
-				save_tab_file("exclusive_d2",d0,"",f,"",a.st_size,"",q,"")
+				save_tab_file("exclusive_d2",d0,"",f,a.st_size,"",q,"")
 	safe_print(); safe_print()
 
 ##########################################################################################################
@@ -1018,56 +755,6 @@ def file_in_skip_diff_list(f1,f2):
 			return True
 
 	return False
-
-##########################################################################################################
-
-def compute_ratio(file1,file2):
-	global elapsed_ratio_time, compute_ratio_timeout
-
-	try:
-		with open(file1,"rb") as fp: file1_data = fp.read()
-		with open(file2,"rb") as fp: file2_data = fp.read()
-	except:
-		print("Unexpected error #6739:", sys.exc_info()[0])
-		return 0
-
-	s = DC_SequenceMatcher( None, file1_data, file2_data, timeout=compute_ratio_timeout)		
-	#safe_print("%s %s" % (file1,file2))
-	#safe_print("%s %s" % (is_binary_string(file1_data), is_binary_string(file2_data)))
-
-	if want_real_quick_diff_list:
-		for tmp in real_quick_diff_list:
-			ext = tmp.lower()
-			w = len(ext) * -1
-			if file1[w:].lower() == ext and file2[w:].lower() == ext:
-				start_time = timeit.default_timer()
-				ratio = s.real_quick_ratio()
-				elapsed = timeit.default_timer() - start_time
-				elapsed_ratio_time[file1] = elapsed
-				return ratio * 100.0
-				return ratio * 100.0 if ratio >= 0.001 else ratio
-
-	if is_binary_string(file1_data.decode("latin-1")) and is_binary_string(file2_data.decode("latin-1")):
-		start_time = timeit.default_timer()
-		ratio = s.quick_ratio()
-		elapsed = timeit.default_timer() - start_time
-		elapsed_ratio_time[file1] = elapsed
-	else:
-		try:
-			start_time = timeit.default_timer()
-			ratio = s.ratio()
-			elapsed = timeit.default_timer() - start_time
-			elapsed_ratio_time[file1] = elapsed
-
-		except KeyboardInterrupt:
-			# if s.ratio() takes too long, press ctrl-c to then use s.real_quick_ratio()
-			start_time = timeit.default_timer()
-			ratio = s.real_quick_ratio() 
-			elapsed = timeit.default_timer() - start_time
-			elapsed_ratio_time[file1] = elapsed
-	
-	return ratio * 100.0
-	return ratio * 100.0 if ratio >= 0.001 else ratio
 
 ##########################################################################################################
 
@@ -1141,9 +828,9 @@ def init_tab_file(fname):
 ##########################################################################################################
 
 # output file format:
-# comparision-type,dname1,dname2,fname,ratio,fsize1,fsize2,fsize_diff,date1,fdate2,date_diff
+# comparision-type,dname1,dname2,fname,fsize1,fsize2,fsize_diff,date1,fdate2,date_diff
 
-def save_tab_file(comparison, dname1, dname2, fname, ratio, fsize1, fsize2, date1, date2):
+def save_tab_file(comparison, dname1, dname2, fname, fsize1, fsize2, date1, date2):
 	global tab_file, ofmt_delim, date_time_fmt
 	
 	if len(dname1):
@@ -1151,14 +838,14 @@ def save_tab_file(comparison, dname1, dname2, fname, ratio, fsize1, fsize2, date
 	else:
 		fsize_diff = ""
 		date_diff = ""
-		ratio = 0.0
+
 
 	if len(dname2):
 		d2 = datetime.strptime(date2, date_time_fmt)
 	else:
 		fsize_diff = ""
 		date_diff = ""
-		ratio = 0.0
+
 
 	if len(dname1) and len(dname2):
 		fsize_diff = fsize2 - fsize1
@@ -1172,7 +859,7 @@ def save_tab_file(comparison, dname1, dname2, fname, ratio, fsize1, fsize2, date
 		date_diff = "%s%04d:%02d:%02d:%02d" % (op,days, hours, minutes, seconds)
 
 	with open(tab_file,mode="a",encoding="latin-1") as fp:
-		entry = ofmt_delim.join((comparison,dname1,dname2,fname,"%4.2f" % (ratio), "%s" % (fsize1), "%s" % (fsize2), "%s" % (fsize_diff), date1, date2, date_diff))
+		entry = ofmt_delim.join((comparison,dname1,dname2,fname, "%s" % (fsize1), "%s" % (fsize2), "%s" % (fsize_diff), date1, date2, date_diff))
 		fp.write("%s\n" % (entry))
 
 ##########################################################################################################
@@ -1197,7 +884,6 @@ def main():
 	parser.add_argument("dname2", help="second directory to compare")
 	
 	group1 = parser.add_mutually_exclusive_group()
-	group1.add_argument("-l", "--listdirs", help="recusively list directories to compare", action="store_true")
 	group1.add_argument("-r", "--recurse", help="recusively view file differences in directories", action="store_true")
 	group1.add_argument("-o", "--options", help="print hard-coded options & values", action="store_true")
 	
@@ -1210,7 +896,6 @@ def main():
 	parser.add_argument("-c", "--contents", help="compare contents of the files, not just metadata", action="store_true")
 	parser.add_argument("-p", "--pgm", help="use PGM as your comparision program")
 	parser.add_argument("-H", "--hdir", help="output differences to HTML files using HDIR directory")
-	parser.add_argument("-n", "--noratio", help="do not compute difference ratio for similar files",action="store_true")
 	parser.add_argument("-t", "--tabfile", help="also save tab-delimited results to TABFILE file")
 	parser.add_argument("-v", "--verbose", help="print directories being compared to STDERR", action="store_true")
 	parser.add_argument("-s", "--stats", help="print statistical totals to STDERR", action="store_true")
@@ -1233,9 +918,6 @@ def main():
 	if args.hdir:
 		html_output_dir = args.hdir
 
-	if args.noratio:
-		want_ratio_computation = False
-
 	if args.pgm:
 		str_cmp_pgm = args.pgm
 		if -1 == str_cmp_pgm.find('"') and str_cmp_pgm.find(" ") >= 0:
@@ -1243,20 +925,17 @@ def main():
 	elif want_cmp_pgm:
 		get_default_cmp_pgm()
 
-	if args.listdirs:
-		meta = filecmp.dircmp(args.dname1, args.dname2)
-		print_listing(meta)
-		return 0
-
 	if args.tabfile:
 		init_tab_file(args.tabfile)
 
 	if not args.recurse:
 		process_directories( args.dname1, args.dname2, diff_only=args.diffonly, recurse=False )
+	"""
 	else:
 		process_directories( args.dname1, args.dname2, diff_only=args.diffonly, recurse=True )
 		meta =  filecmp.dircmp(args.dname1, args.dname2)
 		recurse_directories(meta, args.diffonly)
+	"""
 
 	if args.stats:
 		print_totals(False,args.contents)

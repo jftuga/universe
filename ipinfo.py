@@ -233,7 +233,7 @@ def main():
                 ip_table = future.result()
                 tbl.add_row(build_row(ip_table,my_loc))
 
-    print( tbl.get_string(sortby="input"))
+    print( tbl.get_string(sortby="distance (mi)"))
 
 ##########################################################################
 
