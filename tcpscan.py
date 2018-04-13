@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #!/usr/bin/env python3
 
 """
@@ -1007,5 +1006,4 @@ def main() -> None:
 
 if "__main__" == __name__:
     main()
-
->>>>>>> 360442e36eec3df457318a413fe2ace0eef71b80
+    
