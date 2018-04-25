@@ -25,6 +25,7 @@ examples
     (useful for large ranges with many open ports)
 """
 
+import os.path
 import sys
 import socket
 import socketserver
@@ -38,8 +39,8 @@ from datetime import datetime
 from random import shuffle
 from queue import Queue
 
-pgm_version = "1.29"
-pgm_date = "Apr-12-2018 17:21"
+pgm_version = "1.30"
+pgm_date = "Apr-25-2018 09:10"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 90
@@ -70,6 +71,9 @@ resolve_dns = 0
 # if -r invoked to display runtime stats, keep track of the display threads
 # so that they can all be cancelled when the port scan is completed
 disp_runtime_queue = Queue(0)
+
+# CSV logger for --listen
+fp_tcp_listen = False
 
 #############################################################################################
 
@@ -286,7 +290,10 @@ def create_skipped_port_list(ports:str) -> None:
 def tcp_connect_handler(sock:socket.socket, remote:list, server:socketserver.TCPServer):
     now = time.strftime("%Y-%m-%d %H:%M:%S")
     print("[%s] Incoming connection on %s:%s from %s:%s" % (now,sock.getsockname()[0],sock.getsockname()[1],remote[0],remote[1]))
-    #sock.shutdown(socket.SHUT_RDWR)
+    
+    if fp_tcp_listen:
+        fp_tcp_listen.write("%s,%s:%s,%s:%s\n" % (now,sock.getsockname()[0],sock.getsockname()[1],remote[0],remote[1]))
+        fp_tcp_listen.flush()
     sock.close()
 
 #############################################################################################
@@ -301,8 +308,24 @@ def tcp_listen(port:int) -> None:
 
 #############################################################################################
 
-def tcp_listen_setup(ports:str) -> None:
+def tcp_listen_setup(ports:str, output:str) -> None:
+    """Instead of scanning ports, listen for incoming connection on a group of ports
+       and log them to a CV file
+
+       Args:
+            ports: a list of ports, such as 80,443,8080 or 20-25
+
+            output: (optional) a CSV file name
+    """
+    global fp_tcp_listen
+
     port_list = get_port_list(ports)
+    if output and not os.path.exists(output):
+        fp_tcp_listen = open(output,mode="w",encoding="latin-1")
+        fp_tcp_listen.write("Timestamp,Local,Remote\n")
+        fp_tcp_listen.flush()
+    else:
+        fp_tcp_listen = open(output,mode="a",encoding="latin-1")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
         alpha = {executor.submit(tcp_listen, int(current_port)): current_port for current_port in port_list}
@@ -352,7 +375,7 @@ def main() -> None:
 
     if args.listen:
         try:
-            tcp_listen_setup(args.target)
+            tcp_listen_setup(args.target,args.output)
         except:
             print("Done")
             sys.exit(0)
