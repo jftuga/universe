@@ -39,8 +39,8 @@ from datetime import datetime
 from random import shuffle
 from queue import Queue
 
-pgm_version = "1.30"
-pgm_date = "Apr-25-2018 09:10"
+pgm_version = "1.31"
+pgm_date = "Apr-25-2018 14:03"
 
 # default maximum number of concurrent threads, changed with -T
 max_workers = 90
@@ -74,6 +74,9 @@ disp_runtime_queue = Queue(0)
 
 # CSV logger for --listen
 fp_tcp_listen = False
+
+# save DNS lookups into a dict where key=ip, val=hostname
+dns_cache = {}
 
 #############################################################################################
 
@@ -288,11 +291,32 @@ def create_skipped_port_list(ports:str) -> None:
 #############################################################################################
 
 def tcp_connect_handler(sock:socket.socket, remote:list, server:socketserver.TCPServer):
+    global dns_cache
+
     now = time.strftime("%Y-%m-%d %H:%M:%S")
-    print("[%s] Incoming connection on %s:%s from %s:%s" % (now,sock.getsockname()[0],sock.getsockname()[1],remote[0],remote[1]))
+    remote_addr = remote[0]
+
+    if resolve_dns:
+        if remote_addr not in dns_cache:
+            remote_addr_info = []
+            try:
+                remote_addr_info = socket.gethostbyaddr(remote_addr)
+            except socket.herror:
+                pass
+            except:
+                msg = "\n%s\n%s\n" % (sys.exc_info()[0],sys.exc_info()[1])
+                print(msg)
+
+            if len(remote_addr_info) >= 1:
+                remote_addr = remote_addr_info[0]
+                dns_cache[remote[0]] = remote_addr
+        else:
+            remote_addr = dns_cache[remote_addr]
+
+    print("[%s] Incoming connection on %s:%s from %s:%s" % (now,sock.getsockname()[0],sock.getsockname()[1],remote_addr,remote[1]))
     
     if fp_tcp_listen:
-        fp_tcp_listen.write("%s,%s:%s,%s:%s\n" % (now,sock.getsockname()[0],sock.getsockname()[1],remote[0],remote[1]))
+        fp_tcp_listen.write("%s,%s:%s,%s:%s\n" % (now,sock.getsockname()[0],sock.getsockname()[1],remote_addr,remote[1]))
         fp_tcp_listen.flush()
     sock.close()
 
@@ -302,7 +326,6 @@ def tcp_listen(port:int) -> None:
     host = "0.0.0.0"
 
     print("Listening for incoming TCP connections on %s:%s" % (host,port))
-    print("Press Ctrl-C, Ctrl-\\ or Ctrl-Break to exit.")
     server = socketserver.TCPServer((host, port), tcp_connect_handler)
     server.serve_forever()
 
@@ -319,14 +342,15 @@ def tcp_listen_setup(ports:str, output:str) -> None:
     """
     global fp_tcp_listen
 
-    port_list = get_port_list(ports)
     if output and not os.path.exists(output):
         fp_tcp_listen = open(output,mode="w",encoding="latin-1")
         fp_tcp_listen.write("Timestamp,Local,Remote\n")
         fp_tcp_listen.flush()
-    else:
+    elif output:
         fp_tcp_listen = open(output,mode="a",encoding="latin-1")
 
+    port_list = get_port_list(ports)
+    print("\nPress Ctrl-C, Ctrl-\\ or Ctrl-Break to exit.\n")
     with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
         alpha = {executor.submit(tcp_listen, int(current_port)): current_port for current_port in port_list}
         for future in concurrent.futures.as_completed(alpha):
@@ -352,7 +376,7 @@ def main() -> None:
     global disp_runtime_queue
 
     parser = argparse.ArgumentParser(description="tcpscan.py: a simple, multi-threaded IPv4 TCP port scanner", epilog="version: %s (%s)" % (pgm_version,pgm_date))
-    parser.add_argument("target", help="e.g. 192.168.1.0/24 192.168.1.100 www.example.com")
+    parser.add_argument("target", help="e.g. 192.168.1.0/24 192.168.1.100 www.example.com", nargs="?", default=".")
     parser.add_argument("-x", "--skipnetblock", help="skip a sub-netblock, e.g. 192.168.1.96/28")
     parser.add_argument("-X", "--skipports", help="exclude a subset of ports, e.g. 135-139")
     parser.add_argument("-p", "--ports", help="comma separated list or hyphenated range, e.g. 22,80,443,445,515  e.g. 80-515  e.g. all")
@@ -368,16 +392,20 @@ def main() -> None:
     parser.add_argument("-l", "--loop", help="repeat the port scan LOOP times, 0 for continuous")
     parser.add_argument("-lo", "--loopopen", help="repeat the port scan until all port(s) are open", action="store_true")
     parser.add_argument("-lc", "--loopclose", help="repeat the port scan until all port(s) are closed", action="store_true")
-    parser.add_argument("-L", "--listen", help="listen on given TCP port(s) for incoming connection(s) [mutually exclusive]", action="store_true")
+    parser.add_argument("-L", "--listen", help="listen on given TCP port(s) for incoming connection(s) [mutually exclusive; but works with --output and --dns]", action="store_true")
 
 
     args = parser.parse_args()
 
+    if args.dns:
+        resolve_dns = True
+
     if args.listen:
         try:
-            tcp_listen_setup(args.target,args.output)
+            tcp_listen_setup(args.ports,args.output)
         except:
-            print("Done")
+            msg = "\n%s\n%s\n" % (sys.exc_info()[0],sys.exc_info()[1])
+            print(msg)
             sys.exit(0)
         finally:
             sys.exit(0)
@@ -435,10 +463,7 @@ def main() -> None:
         if not len(hosts): # a single ip-address was given on cmd-line
             tmp = args.target.replace("/32","")
             hosts = (tmp,)
-    
-    if args.dns:
-        resolve_dns = True
-    
+      
     # all_results and now_all_opened are used when args.loopopen=True
     all_results = {}
     now_all_opened = False
