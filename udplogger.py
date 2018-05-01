@@ -151,7 +151,7 @@ def main() -> None:
     """
     global args, max_workers, resolve_dns
 
-    parser = argparse.ArgumentParser(description="udpscan: A multi-threaded, cross-platform IPv4 UDP port listener/logger", epilog="udpscan version: %s" % (pgm_version))
+    parser = argparse.ArgumentParser(description="udplogger: A multi-threaded, cross-platform IPv4 UDP port listener/logger", epilog="udplogger version: %s" % (pgm_version))
     parser.add_argument("ports", help="comma separated list or hyphenated range, e.g. 22,80,443,445,515  e.g. 80-515")
     #parser.add_argument("-T", "--threads", help="number of concurrent threads, default: %s" % (max_workers))
     parser.add_argument("-o", "--output", help="output to CSV file")
