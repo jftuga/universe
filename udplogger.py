@@ -14,8 +14,8 @@ examples
 2) python3 udplogger.py 53,67,68,137
     (concurrently listen on these 4 UDP ports)
 
-3) python3 udplogger.py -d -o results.csv 53,67,68,137
-    (same as example 2, but also resolve DNS and log connections to results.csv)
+3) python3 udplogger.py -d -o results.csv 225-274
+    (concurrently listen on 50 UDP ports, resolve DNS and log connections to results.csv)
 
 MIT License Copyright (c) 2018 John Taylor
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
