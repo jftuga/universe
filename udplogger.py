@@ -34,10 +34,7 @@ import argparse
 import time
 import concurrent.futures
 
-pgm_version = "1.00"
-
-# default maximum number of concurrent threads, will automatically increase if needed
-max_workers = 100
+pgm_version = "1.01"
 
 # CSV logger for --output
 fp_udp_listen = False
@@ -149,11 +146,10 @@ def main() -> None:
     Returns:
         None
     """
-    global args, max_workers, resolve_dns
+    global args, resolve_dns
 
     parser = argparse.ArgumentParser(description="udplogger: A multi-threaded, cross-platform IPv4 UDP port listener/logger", epilog="udplogger version: %s" % (pgm_version))
-    parser.add_argument("ports", help="comma separated list or hyphenated range, e.g. 22,80,443,445,515  e.g. 80-515")
-    #parser.add_argument("-T", "--threads", help="number of concurrent threads, default: %s" % (max_workers))
+    parser.add_argument("ports", help="comma separated list or hyphenated range, e.g. 53,67,68,123,137,138  e.g. 53-1000")
     parser.add_argument("-o", "--output", help="output to CSV file")
     parser.add_argument("-d", "--dns", help="resolve IPs to host names", action="store_true")
 
