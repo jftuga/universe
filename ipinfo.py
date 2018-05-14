@@ -27,7 +27,7 @@ import urllib.request
 from collections import defaultdict
 from veryprettytablepatched import VeryPrettyTablePatched
 
-pgm_version = "2.2"
+pgm_version = "2.3"
 
 # constants for vincenty()
 # WGS 84
@@ -200,6 +200,10 @@ def main():
     for obj in sys.argv[1:]:
         if obj.find("://") > 1:
             host_name = obj.split("/")[2]
+            host_ip_list.append( host_name )
+            obj = host_name
+        elif obj.find("@") > 1:
+            host_name = obj.split("@")[1]
             host_ip_list.append( host_name )
             obj = host_name
         else:
