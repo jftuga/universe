@@ -10,6 +10,18 @@
 - To get a single property value: ```(Get-Process -PID $PID).Name```
 - To search for command: ```Get-Command -Noun process```
 
+### Modules
+
+- to list some modules: 
+- ```Get-Module -ListAvailable -Name VMware*```
+- to update some modules:
+- ```Update-Module VMware.*```
+- 
+- to find and install a modules:
+- ```Find-Module -Name VMware.PowerCLI```
+- ```Install-Module -Name VMware.PowerCLI -Scope CurrentUser```
+- ```Get-Command -Module *VMWare*```
+
 ### Misc
 
 - to create a string containing a line of X's: ```$line = "x"*77```
