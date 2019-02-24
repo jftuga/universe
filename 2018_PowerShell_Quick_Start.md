@@ -309,7 +309,8 @@ dir | foreach { $_.ToString(); ($a = dir $_ | measure -Line).Lines } | of lines.
 
 
 
-
+###
+[What is Your top 5 powershell commands, which save you the most time](https://www.reddit.com/r/sysadmin/comments/au94n3/your_top_5_powershell_commands_which_save_you_the/)
 
 
 ## To Do
