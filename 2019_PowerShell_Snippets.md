@@ -10,5 +10,7 @@
 ```powershell
 
 $limit = (Get-Date).AddDays(-80)
-get-aduser -filter * -properties Name,PasswordNeverExpires,LastLogon,PasswordLastSet | ? { $_.passwordNeverExpires -eq $False -and $_.PasswordLastSet -lt $limit -and $_.LastLogon -gt 0 }  | sort PasswordLastSet | ft Name,PasswordLastSet,LastLogon,PasswordNeverExpires
+get-aduser -filter * -properties Name,PasswordNeverExpires,LastLogon,PasswordLastSet | ? { $_.passwordNeverExpires -eq $False -and $_.PasswordLastSet -lt $limit -and $_.LastLogon -gt 0 }  | sort PasswordLastSet | select Name,PasswordLastSet,@{N='LastLogin';E={[DateTime]::FromFileTime($_.LastLogon)}},PasswordNeverExpires
+
+
 ```
