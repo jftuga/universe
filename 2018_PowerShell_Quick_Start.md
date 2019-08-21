@@ -10,6 +10,18 @@
 - To get a single property value: ```(Get-Process -PID $PID).Name```
 - To search for command: ```Get-Command -Noun process```
 
+### Modules
+
+- to list some modules: 
+- ```Get-Module -ListAvailable -Name VMware*```
+- to update some modules:
+- ```Update-Module VMware.*```
+- 
+- to find and install a modules:
+- ```Find-Module -Name VMware.PowerCLI```
+- ```Install-Module -Name VMware.PowerCLI -Scope CurrentUser```
+- ```Get-Command -Module *VMWare*```
+
 ### Misc
 
 - to create a string containing a line of X's: ```$line = "x"*77```
@@ -297,7 +309,8 @@ dir | foreach { $_.ToString(); ($a = dir $_ | measure -Line).Lines } | of lines.
 
 
 
-
+###
+[What is Your top 5 powershell commands, which save you the most time](https://www.reddit.com/r/sysadmin/comments/au94n3/your_top_5_powershell_commands_which_save_you_the/)
 
 
 ## To Do

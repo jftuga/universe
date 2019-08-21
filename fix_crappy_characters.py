@@ -14,6 +14,12 @@ import sys
 
 fix = { 133: ".", 145: "'", 146: "'", 147: '"', 148: '"', 150: "-", 151: "-" }
 
+def safe_print(data,isError=False):
+    dest = sys.stdout if not isError else sys.stderr
+    # can also use 'replace' instead of 'ignore' for errors= parameter
+    print( str(data).encode(sys.stdout.encoding, errors='ignore').decode(sys.stdout.encoding), file=dest )
+
+
 express = "line"
 for subst in fix:
 	if fix[subst] != "'":
@@ -47,7 +53,7 @@ if 1 == summary:
 		line = line[:-1]
 		for ch in line:
 			if ord(ch) >= 127:
-				print("[%d] (%d)%c : %s" % (linenum, ord(ch), ch, line))
+				safe_print("[%d] (%d)%c : %s" % (linenum, ord(ch), ch, line))
 				count += 1
 		linenum +=1
 
