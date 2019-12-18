@@ -48,7 +48,7 @@ public static void CPUKill(object cpuUsage)
     	int c_count = 0;
 
     	Console.WriteLine("");
-    	Console.WriteLine("Increases CPU utilization to 100% on all CPU cores for 90 seconds.");
+    	Console.WriteLine("Increases CPU utilization to 100% on all CPU cores for 90 minutes.");
     	Console.WriteLine("Press Ctrl+C 3 times to exit");
     	Console.WriteLine("");
 
@@ -62,7 +62,7 @@ public static void CPUKill(object cpuUsage)
     	};
 
         int cpuUsage = 50;
-        int time = 10000 * 9;
+        int time = 10000 * 9 * 100;
         List<Thread> threads = new List<Thread>();
         for (int i = 0; i < Environment.ProcessorCount*4; i++)
         {

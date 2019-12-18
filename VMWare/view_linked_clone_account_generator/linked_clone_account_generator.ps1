@@ -34,14 +34,17 @@ pasting into VM View.  These files are called pool_PoolName.txt.
 
 #>
 
+# https://svrviewconnect1/admin
+
 # modify these variables to your installation
-$ifile = "vm_view_pools.tsv"
-$base_ou = "OU=User Workstations,DC=example,DC=com"
-$domain = "example.com"
+$ifile = "2018--vm_view_pools.tsv"
+$base_ou = "OU=Exam Rooms,OU=Workstations,DC=uhs,DC=uga,DC=edu"
+$domain = "uhs.uga.edu"
 # this is buggy...
 # $view_conn_svrs = "SVRVIEW01,SVRVIEW02,SVRVIEW03,SVRVIEW04"  # comma-delimited, no spaces in between entries
-$domain_users = "CN=Domain Users,OU=Security Groups,DC=example,DC=com"
-$pool_user_pw = "xxxyyyzzz"
+#$domain_users = "CN=Domain Users,OU=Security Groups,DC=uhs,DC=uga,DC=edu"
+$domain_users = "OU=Exam Rooms,OU=Workstations,DC=uhs,DC=uga,DC=edu"
+$pool_user_pw = "Medical542"
 
 
 
@@ -62,7 +65,7 @@ function load_data($tsv) {
 
 # IN ADU&C, you will want to manually check the "Protect From Accidental Deletion" for each OU
 function create_ou($ou) {
-	$debug = 0
+	$debug = 1
 	$myconn = "LDAP://$base_ou"
 
 	if($debug -eq 1 ) { echo "checking OU=$ou,$base_ou" }
@@ -70,14 +73,13 @@ function create_ou($ou) {
 	$search.Filter = "(&(name=$ou)(objectCategory=organizationalunit))"
 	$result = $search.FindOne()
 	if( $result ) {
-		if($debug -eq 1) {echo "already exists!"}
+		if($debug -eq 1) {echo "OU=$ou,$base_ou already exists!"}
 	} else {
-		if($debug -eq 1) {echo "does not exist, will create..."}
-
-		$newou = ([ADSI] $myconn ).Create("organizationalUnit", "ou=$ou")
-		$q = get-date
-		$newou.Put("description","created on $q")
-		$newou.SetInfo()
+		if($debug -eq 1) {echo "OU=$ou,$base_ou does not exist, will create..."}
+		##$newou = ([ADSI] $myconn ).Create("organizationalUnit", "ou=$ou")
+		##$q = get-date
+		##$newou.Put("description","created on $q")
+		##$newou.SetInfo()
 	}
 }
 
@@ -85,7 +87,7 @@ function create_ou($ou) {
 # the assigned VM (and view connection servers [required]), password does
 # not expire, can't change password
 function create_user($ou, $uname) {
-	$debug = 0
+	$debug = 1
 	$myconn = "LDAP://OU=$ou,$base_ou"
 	$q = get-date
 
@@ -98,7 +100,7 @@ function create_user($ou, $uname) {
 		echo "myconn: $myconn"
 	}
 
-	# create the user account, SAMAccountName is mandatory
+    # create the user account, SAMAccountName is mandatory
 	$newusr = ([ADSI] $myconn ).Create("user", "cn=Custom-$uname")
 	$newusr.Put("sAMAccountName", "Custom-$uname")  # this field must be 13 characters or less in length, if you use Teradici PCoIP firmware
 	$newusr.Put("userPrincipalName", "Custom-$uname"+ "@" + "$domain")
@@ -140,6 +142,7 @@ function create_user($ou, $uname) {
 	$newusr.psbase.CommitChanges()
 	$newusr.SetInfo()
 	
+    
 	if($debug -eq 1) {
 		echo ""
 		echo ""
@@ -148,7 +151,8 @@ function create_user($ou, $uname) {
 
 # create a group in AD, starting with Pool-
 function create_group($ou) {
-	$debug = 0
+	$debug = 1
+    $ou = $ou + "-Win7"
 	$myconn = "LDAP://OU=$ou,$base_ou"
 	$q = get-date
 
@@ -162,13 +166,13 @@ function create_group($ou) {
 	$search.Filter = "(&(name=Pool-$ou)(objectCategory=group))"
 	$result = $search.FindOne()
 	if( $result ) {
-		if($debug -eq 1) {echo "already exists!"}
+		if($debug -eq 1) {echo "Pool-$ou already exists!"}
 	} else {
-		if($debug -eq 1) {echo "does not exist, will create..."}
-		$newgrp = ([ADSI] $myconn ).Create("group", "cn=Pool-$ou")
-		$newgrp.put("sAMAccountName", "Pool-$ou" )
-		$newgrp.put("description", "VMWare View Pool for $ou" + ", created on $q"  )
-		$newgrp.SetInfo()
+		if($debug -eq 1) {echo "Pool-$ou does not exist, will create..."}
+		#$newgrp = ([ADSI] $myconn ).Create("group", "cn=Pool-$ou")
+		##$newgrp.put("sAMAccountName", "Pool-$ou" )
+		##$newgrp.put("description", "VMWare View Pool for $ou" + ", created on $q"  )
+		##$newgrp.SetInfo()
 	}
 
 	if($debug -eq 1) {
@@ -178,8 +182,9 @@ function create_group($ou) {
 }
 
 function add_user_to_group($ou, $usr) {
-	$debug = 0
-	$myconn = "LDAP://CN=Pool-$ou,OU=$ou,$base_ou"
+	$debug = 1
+    $PoolOU = $ou + "-Win7"
+	$myconn = "LDAP://CN=Pool-$PoolOU,OU=$ou,$base_ou"
 	$myusr  = "LDAP://CN=Custom-$usr,OU=$ou,$base_ou"
 
 	if($debug -eq 1 ) {
@@ -187,9 +192,9 @@ function add_user_to_group($ou, $usr) {
 		echo "myusr :      $myusr"
 	}
 
-	$grp = [ADSI] $myconn
-	$grp.add($myusr)
-	$grp.SetInfo()
+	##$grp = [ADSI] $myconn
+	##$grp.add($myusr)
+	##$grp.SetInfo()
 
 	if($debug -eq 1) {
 		echo ""
@@ -269,6 +274,7 @@ foreach ($ou in $pools.keys) {
 }
 start-sleep -m 1000
 
+
 echo ""
 echo ""
 echo "-----------------------------------"
@@ -279,14 +285,15 @@ foreach ($ou in $pools.keys) {
 	foreach($usr in $pools[$ou]){
 		echo "$ou :: $usr"
 		create_user $ou $usr
-		start-sleep -m 4500
-		add_user_to_group $ou $usr
-		set_primary_user_group $ou $usr
-		remove_user_from_group $ou $usr
-		start-sleep -m 1500
+        break
+		##start-sleep -m 4500
+		##add_user_to_group $ou $usr
+		##set_primary_user_group $ou $usr
+		##remove_user_from_group $ou $usr
+		##start-sleep -m 1500
 	}
 }
-
+<#
 
 echo ""
 echo ""
@@ -309,3 +316,4 @@ foreach ($ou in $pools.keys) {
 
 echo ""
 echo ""
+#>

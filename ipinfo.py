@@ -178,6 +178,7 @@ def get_my_coords() -> str:
 ##########################################################################
 
 def main():
+    print("50 main()")
     if len(sys.argv) < 2:
         print("Usage:")
         print("%s: [ IP address | host name | URL ] ..." % (sys.argv[0]))
@@ -188,7 +189,10 @@ def main():
     max_workers = 30
 
     ip_re = re.compile("^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$")
+    print("60 main()")
     my_loc = get_my_coords()
+    print("70 main()")
+
 
     tbl = VeryPrettyTablePatched()
     tbl.field_names = ( "input", "ip", "hostname", "org", "loc", "city", "region", "country", "distance (mi)" )
@@ -196,6 +200,8 @@ def main():
 
     host_ip_list = []
     host_ip_tbl = defaultdict(list)
+
+    print("100 main()")
 
     for obj in sys.argv[1:]:
         if obj.find("://") > 1:

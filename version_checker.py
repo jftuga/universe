@@ -6,7 +6,6 @@ import sys
 import urllib.request
 from collections import defaultdict
 
-max_workers = 6
 software = defaultdict(dict)
 
 """
@@ -48,7 +47,6 @@ if 1:
 
     software["Java"]["url"] = "https://www.java.com/en/download/"
     software["Java"]["match"] = re.compile("""<h4.*?>.*?Version (.*?)....</""",re.I|re.M|re.S)
-
 
 def safe_print(data,isError=False):
     dest = sys.stdout if not isError else sys.stderr
@@ -94,7 +92,7 @@ def test_two():
         print("no match")
 
 def main():
-    with concurrent.futures.ThreadPoolExecutor(max_workers) as executor:
+    with concurrent.futures.ThreadPoolExecutor(len(software)) as executor:
         result = {executor.submit(version_check,software[name],name): name for name in software.keys()}
         for future in concurrent.futures.as_completed(result):
             if future.done():
