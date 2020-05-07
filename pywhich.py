@@ -12,7 +12,7 @@ import os
 import os.path
 import sys
 
-VERSION="1.0"
+VERSION="1.1"
 
 # common Windows executable file extensions
 all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc", "msi", "msp", "mst", 
@@ -53,6 +53,7 @@ def main():
         return
     pgm = sys.argv[1]
     all_paths = os.environ['PATH']
+    all_paths = ".;" + all_paths
     for path in all_paths.split(";"):
         search(path, pgm.lower())
 
