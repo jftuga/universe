@@ -13,7 +13,7 @@ import os.path
 import sys
 import concurrent.futures
 
-VERSION="1.2"
+VERSION="1.2.1"
 
 # common Windows executable file extensions
 all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc", "msi", "msp", "mst", 
@@ -37,9 +37,10 @@ def search(dname:str, pgm:str):
     all_files = os.listdir(dname)
     n=len(pgm)
     for f in all_files:
-        f = f.lower()
-        if f == pgm:
+        match = False
+        if f.lower() == pgm:
             found = os.path.join(dname,f)
+            match = found
             print(found)
         orig = f
         f_ext = os.path.splitext(f)[1]
@@ -48,7 +49,9 @@ def search(dname:str, pgm:str):
         if f == pgm:
             if f_ext in all_ext:
                 found = os.path.join(dname,orig)
-                print(found.lower())
+                if match != found:
+                    print(found)
+
 
 def main():
     if len(sys.argv) != 2:
@@ -60,12 +63,8 @@ def main():
     all_paths = ".;" + all_paths
     path_list = all_paths.split(";")
     with concurrent.futures.ThreadPoolExecutor(len(path_list)) as executor:
-        result = {executor.submit(search, path, pgm): path for path in path_list}
-        for future in concurrent.futures.as_completed(result):
-            if future.done():
-                result = future.result()
-                if result:
-                    print(result)
+        {executor.submit(search, path, pgm): path for path in path_list}
+
 
 if "__main__" == __name__:
     main()
