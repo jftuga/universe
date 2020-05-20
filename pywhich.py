@@ -11,8 +11,9 @@ Iterate through the PATH environment variable to search for an executable given 
 import os
 import os.path
 import sys
+import concurrent.futures
 
-VERSION="1.1"
+VERSION="1.2"
 
 # common Windows executable file extensions
 all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc", "msi", "msp", "mst", 
@@ -22,8 +23,10 @@ all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc"
 def usage():
     print()
     print("pywhich, v%s" % (VERSION))
+    print("Search for a program that is located in the environment PATH")
+    print()
     print("Give program name without any file extension on the cmd-line")
-    print("Ex: pywhich grep")
+    print("Example: pywhich curl")
     print()
 
 def search(dname:str, pgm:str):
@@ -52,10 +55,17 @@ def main():
         usage()
         return
     pgm = sys.argv[1]
+    pgm = pgm.lower()
     all_paths = os.environ['PATH']
     all_paths = ".;" + all_paths
-    for path in all_paths.split(";"):
-        search(path, pgm.lower())
+    path_list = all_paths.split(";")
+    with concurrent.futures.ThreadPoolExecutor(len(path_list)) as executor:
+        result = {executor.submit(search, path, pgm): path for path in path_list}
+        for future in concurrent.futures.as_completed(result):
+            if future.done():
+                result = future.result()
+                if result:
+                    print(result)
 
 if "__main__" == __name__:
     main()
