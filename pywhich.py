@@ -14,7 +14,7 @@ import platform
 import sys
 import concurrent.futures
 
-VERSION="1.2.2"
+VERSION="1.2.3"
 
 # common Windows executable file extensions
 all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc", "msi", "msp", "mst", 
@@ -52,9 +52,10 @@ def search(order:int, dname:str, pgm:str) -> list:
         match = False
         if f.lower() == pgm:
             found = os.path.join(dname,f)
-            match = found
-            #print(found)
-            results.append((order,found))
+            if os.path.isfile(found):
+                match = found
+                #print(found)
+                results.append((order,found))
         orig = f
         f_ext = os.path.splitext(f)[1]
         f_ext = f_ext[1:]
@@ -63,8 +64,9 @@ def search(order:int, dname:str, pgm:str) -> list:
             if f_ext in all_ext:
                 found = os.path.join(dname,orig)
                 if match != found:
-                    #print(found)
-                    results.append((order,found))
+                    if os.path.isfile(found):
+                        #print(found)
+                        results.append((order,found))
     return results
 
 
