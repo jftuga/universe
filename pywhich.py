@@ -14,7 +14,7 @@ import platform
 import sys
 import concurrent.futures
 
-VERSION="1.2.3"
+VERSION="1.2.4"
 
 # common Windows executable file extensions
 all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc", "msi", "msp", "mst", 
@@ -79,7 +79,7 @@ def main():
     all_paths = os.environ['PATH']
     if "Windows" == platform.system():
         all_paths = ".;" + all_paths
-    path_list = all_paths.split(";")
+    path_list = all_paths.split(os.pathsep)
     
     i = 0
     ordered = {}
@@ -93,7 +93,7 @@ def main():
         for future in concurrent.futures.as_completed(result):
             if future.done():
                 all_pgms = future.result()
-                if len(all_pgms):
+                if all_pgms and len(all_pgms):
                     for pgm in all_pgms:
                         ordered_results.append(pgm)
 
