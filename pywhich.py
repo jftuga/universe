@@ -14,11 +14,11 @@ import platform
 import sys
 import concurrent.futures
 
-VERSION="1.2.5"
+VERSION="1.2.6"
 
 # common Windows executable file extensions
 all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc", "msi", "msp", "mst", 
-    "paf", "pif", "ps1", "py", "reg", "rgs", "scr", "sct", "shb", "shs", "u3p", "rb",
+    "paf", "pif", "pl", "ps1", "py", "reg", "rgs", "scr", "sct", "shb", "shs", "u3p", "rb", "sh",
     "vb", "vbe", "vbs", "vbscript", "ws", "wsf", "wsh" )
 
 def usage():
