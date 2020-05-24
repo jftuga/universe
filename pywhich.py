@@ -14,7 +14,7 @@ import platform
 import sys
 import concurrent.futures
 
-VERSION="1.2.4"
+VERSION="1.2.5"
 
 # common Windows executable file extensions
 all_ext = ( "bat", "cmd", "com", "cpl", "exe", "inf", "ini", "job", "lnk", "msc", "msi", "msp", "mst", 
@@ -69,6 +69,15 @@ def search(order:int, dname:str, pgm:str) -> list:
                         results.append((order,found))
     return results
 
+def unqiue(path_list:list) -> list:
+    uniq = []
+    for p in path_list:
+        if p not in uniq:
+            uniq.append(p)
+        else:
+            print(f"WARNING: '{p}' appears multiple times in PATH", file=sys.stderr)
+
+    return uniq
 
 def main():
     if len(sys.argv) != 2:
@@ -80,6 +89,7 @@ def main():
     if "Windows" == platform.system():
         all_paths = ".;" + all_paths
     path_list = all_paths.split(os.pathsep)
+    path_list = unqiue(path_list)
     
     i = 0
     ordered = {}
