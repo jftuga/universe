@@ -14,3 +14,11 @@ get-aduser -filter * -properties Name,PasswordNeverExpires,LastLogon,PasswordLas
 
 
 ```
+
+## Signing a PowerShell Script
+
+```powershell
+
+Set-AuthenticodeSignature .\MyScript.ps1 @(Get-ChildItem cert:\CurrentUser\My -codesign)[0]
+
+```
