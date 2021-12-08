@@ -29,28 +29,29 @@ import socket
 import argparse
 
 pgm_name = "putty_session_generator"
-pgm_version = "1.01"
-pgm_date = "Jun-14-2017 13:53"
+pgm_version = "1.10"
+pgm_date = "Dec-06-2021 08:39"
 
-header="Windows Registry Editor Version 5.00"
+header = "Windows Registry Editor Version 5.00"
 
 # Use regedit.exe to export the 'Default Settings'
 # Substituions will occur for __SESSION__, __IPADDRESS__, and optoinally __USERNAME__
-session_template="""
+session_template = """
 [HKEY_CURRENT_USER\SOFTWARE\SimonTatham\PuTTY\Sessions\__SESSION__]
 "Present"=dword:00000001
 "HostName"="__IPADDRESS__"
-"LogFileName"="c:\\\\temp\\\\putty\\\\&H--&Y&M&D.&T.log"
-"LogType"=dword:00000001
+"LogFileName"="putty.log"
+"LogType"=dword:00000000
 "LogFileClash"=dword:ffffffff
 "LogFlush"=dword:00000001
+"LogHeader"=dword:00000001
 "SSHLogOmitPasswords"=dword:00000001
 "SSHLogOmitData"=dword:00000000
 "Protocol"="ssh"
 "PortNumber"=dword:00000016
 "CloseOnExit"=dword:00000001
 "WarnOnClose"=dword:00000001
-"PingInterval"=dword:00000001
+"PingInterval"=dword:00000000
 "PingIntervalSecs"=dword:00000000
 "TCPNoDelay"=dword:00000001
 "TCPKeepalives"=dword:00000000
@@ -78,23 +79,27 @@ session_template="""
 "AgentFwd"=dword:00000000
 "GssapiFwd"=dword:00000000
 "ChangeUsername"=dword:00000000
-"Cipher"="aes,chacha20,blowfish,3des,WARN,arcfour,des"
+"Cipher"="aes,chacha20,3des,WARN,des,blowfish,arcfour"
 "KEX"="ecdh,dh-gex-sha1,dh-group14-sha1,rsa,WARN,dh-group1-sha1"
-"HostKey"="ed25519,ecdsa,rsa,dsa,WARN"
+"HostKey"="ed448,ed25519,ecdsa,rsa,dsa,WARN"
+"PreferKnownHostKeys"=dword:00000001
 "RekeyTime"=dword:0000003c
+"GssapiRekey"=dword:00000002
 "RekeyBytes"="1G"
 "SshNoAuth"=dword:00000000
+"SshNoTrivialAuth"=dword:00000000
 "SshBanner"=dword:00000001
 "AuthTIS"=dword:00000000
 "AuthKI"=dword:00000001
 "AuthGSSAPI"=dword:00000001
+"AuthGSSAPIKEX"=dword:00000001
 "GSSLibs"="gssapi32,sspi,custom"
 "GSSCustom"=""
 "SshNoShell"=dword:00000000
 "SshProt"=dword:00000003
 "LogHost"=""
 "SSH2DES"=dword:00000000
-"PublicKeyFile"=""
+"PublicKeyFile"="__PUBLICKEYFILE__"
 "RemoteCommand"=""
 "RFCEnviron"=dword:00000000
 "PassiveTelnet"=dword:00000000
@@ -159,6 +164,7 @@ session_template="""
 "TryPalette"=dword:00000000
 "ANSIColour"=dword:00000001
 "Xterm256Colour"=dword:00000001
+"TrueColour"=dword:00000001
 "BoldAsColour"=dword:00000001
 "Colour0"="187,187,187"
 "Colour1"="255,255,255"
@@ -183,9 +189,11 @@ session_template="""
 "Colour20"="187,187,187"
 "Colour21"="255,255,255"
 "RawCNP"=dword:00000000
+"UTF8linedraw"=dword:00000000
 "PasteRTF"=dword:00000000
 "MouseIsXterm"=dword:00000000
 "RectSelect"=dword:00000000
+"PasteControls"=dword:00000000
 "MouseOverride"=dword:00000001
 "Wordness0"="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0"
 "Wordness32"="0,1,2,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1"
@@ -195,6 +203,10 @@ session_template="""
 "Wordness160"="1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1"
 "Wordness192"="2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2"
 "Wordness224"="2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,2,2,2,2,2,2,2,2"
+"MouseAutocopy"=dword:00000001
+"MousePaste"="explicit"
+"CtrlShiftIns"="explicit"
+"CtrlShiftCV"="none"
 "LineCodePage"=""
 "CJKAmbigWide"=dword:00000000
 "UTF8Override"=dword:00000001
@@ -256,48 +268,59 @@ session_template="""
 "ConnectionSharingUpstream"=dword:00000001
 "ConnectionSharingDownstream"=dword:00000001
 "SSHManualHostKeys"=""
+"SUPDUPLocation"="The Internet"
+"SUPDUPCharset"=dword:00000000
+"SUPDUPMoreProcessing"=dword:00000000
+"SUPDUPScrolling"=dword:00000000
 """
+
 
 #####################################################################################################
 
-def dns_lookup(name:str,fail_on_err:bool=False) -> str:
+def dns_lookup(name: str, fail_on_err: bool = False) -> str:
     n = None
     try:
         n = socket.gethostbyname(name)
     except:
         n = None
         if fail_on_err:
-            print("DNS Failure on: %s" %(name), file=sys.stderr)
+            print("DNS Failure on: %s" % (name), file=sys.stderr)
             sys.exit()
     return n
 
+
 #####################################################################################################
 
-def create_reg(sess: str, username: str) -> None:
+def create_reg(sess: str, username: str, publickeyfile: str) -> None:
     if not username:
-        username=""
+        username = ""
 
-    ipaddr = dns_lookup(sess,True)
+    ipaddr = dns_lookup(sess, True)
     if not ipaddr:
         ipaddr = ""
 
-    registry = session_template.replace("__SESSION__",sess).replace("__IPADDRESS__",ipaddr).replace("__USERNAME__",username)
+    publickeyfile = publickeyfile.replace("\\", "\\\\")
+    registry = session_template.replace("__SESSION__", sess).replace("__IPADDRESS__", ipaddr).replace("__USERNAME__", username).replace("__PUBLICKEYFILE__", publickeyfile)
     print(registry)
     print()
+
 
 ###################################################################################################
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Create PuTTY session registry entries that can be imported via reg.exe.", epilog="%s, version: %s (%s)" % (pgm_name,pgm_version,pgm_date))
+    parser = argparse.ArgumentParser(
+        description="Create PuTTY session registry entries that can be imported via reg.exe.",
+        epilog="%s, version: %s (%s)" % (pgm_name, pgm_version, pgm_date))
     parser.add_argument("session", help="session name", nargs="+")
-    parser.add_argument("-u", "--user", help="auto-login username")
+    parser.add_argument("-u", "--user", help="auto-login username", default="")
+    parser.add_argument("-p", "--privkeyfile", help="private key file, .ppk", default="")
     args = parser.parse_args()
 
     print(header)
     print()
     for session in args.session:
-        create_reg(session,args.user)
+        create_reg(session, args.user, args.privkeyfile)
     return 0
 
 
@@ -305,4 +328,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
