@@ -43,5 +43,8 @@
         "!Join sequence"
     ],
     // Enable/disable default YAML formatter (requires restart)
-    "yaml.format.enable": true
+    "yaml.format.enable": true,
+    "python.linting.flake8Args": [
+        "E201,E202,E226,E231,E302,E402,E501"
+    ]
 }
