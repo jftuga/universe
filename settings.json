@@ -39,7 +39,7 @@
         "!ImportValue",
         "!Select",
         "!Select sequence",
-        "!Split",
+        "!Split sequence",
         "!Join sequence"
     ],
     // Enable/disable default YAML formatter (requires restart)
