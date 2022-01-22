@@ -23,8 +23,8 @@ set showmatch
 set hlsearch
 set autochdir
 
-# nunmap <C-A>
-# " http://vim.wikia.com/wiki/Increasing_or_decreasing_numbers
+" nunmap <C-A>
+" http://vim.wikia.com/wiki/Increasing_or_decreasing_numbers
 
 "colorscheme elflord
 colorscheme desert
