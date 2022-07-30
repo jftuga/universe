@@ -19,9 +19,9 @@ def main():
             if future.done():
                 e = future.exception()
                 if e:
-                    print(f"ERROR: {e}")
+                    print(f"[  ERROR   ]: {e}")
                     continue
-                print(f"result: {future.result()}")
+                print(f"[  result  ]: {future.result()}")
 
 
 if "__main__" == __name__:
