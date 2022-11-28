@@ -10,15 +10,15 @@ import boto3
 import sys
 
 
-def header(service: str):
+def header(service: str, api_type: str):
     print()
-    title = f"{service} waiters"
+    title = f"{service} {api_type}"
     print(title)
     print("=" * len(title))
 
 
 def waiters(service: str, client):
-    header(service)
+    header(service, "waiters")
     if not len(client.waiter_names):
         print("(None)")
     else:
@@ -27,7 +27,7 @@ def waiters(service: str, client):
 
 
 def paginators(service: str, client):
-    header(service)
+    header(service, "paginators")
     all_api = [a for a in dir(client) if a[0] != "_" and a != "can_paginate"]
     has_paginator = False
     for api in all_api:
