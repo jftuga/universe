@@ -122,8 +122,7 @@ def main() -> None:
         # Process completed futures
         for future in concurrent.futures.as_completed(future_to_value):
             if future.done():
-                exception = future.exception()
-                if exception:
+                if exception := future.exception():
                     thread_safe_print(f"[  ERROR   ] {exception}")
                     continue
                 thread_safe_print(f"[  result  ] {future.result()}")
