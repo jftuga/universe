@@ -103,3 +103,59 @@ If the `strrev.c` off-by-one, `cookedload.c` missing null terminators, and `fwri
 | `urlExtract.c` | Scans gzip-compressed Usenet article files in a directory, extracting URLs by searching for `://` patterns. |
 | `usleep.c` | Sleeps for a specified number of microseconds given on the command line. |
 | `zeropad.c` | Demonstrates printf zero-padding format specifiers for integers. |
+
+---
+
+## 25-Year Retrospective: What Aged Well and What Didn't
+
+This code was written around 2001, targeting C89/C90 on 32-bit Linux. A quarter century later, C has evolved through C99, C11, C17, and C23. The systems programming landscape has shifted dramatically. Here is what still holds up, what has been superseded, and what has become irrelevant.
+
+### Still Applicable in 2026
+
+- **Core algorithms.** The sorting and searching implementations (`BinarySearch.c`, `InsertionSort.c`, `merge.c`) teach the same fundamentals they did in 2001. These algorithms haven't changed and never will.
+- **`qsort` and `bsearch`.**  Both remain the standard C library sort and search functions. The comparator-with-void-pointer pattern in `bsearchInt.c`, `bsearchString.c`, `nameage1.c`, and `nameage2.c` is still how you use them today.
+- **Function pointers and callbacks.** The dispatch table pattern in `callback.c` remains a core C idiom. This is still how event systems, plugin architectures, and vtable-style polymorphism work in C codebases.
+- **`mmap`.** Memory-mapped I/O (`mmap_malloc_test1-3.c`) is arguably more relevant now than in 2001 -- it underpins modern database engines, file-backed allocators, and zero-copy I/O patterns.
+- **`fork` and shared memory visibility.** The demonstration in `mmap_malloc_test3.c` that mmap'd regions survive `fork` is still an important systems programming concept.
+- **Binary file I/O with `fread`/`fwrite`.** The `rawimport.c`/`cookedload.c` pair demonstrates serialization fundamentals that remain relevant, even if you'd typically use a proper serialization format today.
+- **`printf` formatting.** Zero-padding (`zeropad.c`), octal output (`octal.c`), and format specifiers in general work identically today.
+- **Dynamic memory with `malloc`/`realloc`.** The progression from fixed arrays to fully dynamic allocation (`nameage1.c` to `nameage2.c`) teaches a lesson that still matters.
+
+### Superseded Idioms
+
+| Old Idiom (seen in this code) | Modern Replacement | Notes |
+|------|-------------|-------|
+| Implicit function declarations (missing `#include <string.h>`, etc.) | Explicit includes required | C99 removed implicit `int` declarations. Modern compilers emit errors, not warnings. |
+| `(int) mmap_result < 0` to detect failure | `if (ptr == MAP_FAILED)` | Casting pointers to `int` was already dubious on 32-bit; on 64-bit systems it silently truncates and the check is broken. `MAP_FAILED` has been the correct check since POSIX.1-2001. |
+| `usleep()` | `nanosleep()` or `clock_nanosleep()` | `usleep` was removed from POSIX.1-2008. `nanosleep` provides the same functionality with nanosecond granularity and proper `EINTR` handling. |
+| Casting `malloc` return values | No cast needed in C | Was a C++ compatibility habit. In C, `void *` converts implicitly. The cast can mask a missing `#include <stdlib.h>`. |
+| `while (!feof(fp))` loop pattern | Check the return value of the read call directly | The `feof` flag is only set *after* a read fails, so the last iteration always processes stale data. The correct pattern is `while (fgets(...) != NULL)` or `while (scanf(...) == 1)`. |
+| `sprintf` for string formatting | `snprintf` (available since C99) | `sprintf` has no bounds checking and is a buffer overflow vector. `snprintf` should always be used instead. |
+| `strcpy` / `strcat` | `strncpy` / `strncat`, or better: `snprintf` or `strlcpy` (BSD/POSIX) | Unbounded copies are a classic source of buffer overflows. Modern code should always use length-bounded alternatives. |
+| `atoi` / `atol` for number parsing | `strtol` / `strtoul` | `atoi` has no error detection -- it returns 0 for both "0" and "not a number". `strtol` reports errors via `errno` and an end pointer. |
+| `return fprintf(stderr, ...)` as error exit | `fprintf(stderr, ...); return EXIT_FAILURE;` or `exit(EXIT_FAILURE)` | `fprintf` returns the character count written, not a meaningful exit code. Using `EXIT_FAILURE` (defined as 1) gives callers a predictable status. |
+| CVS `$Id$` and `$Log$` keywords | Git (or any modern VCS) | CVS keyword expansion in source files was standard practice in 2001. Git does not expand keywords by default, and commit history lives in the repository, not in file headers. |
+| `#define SIZE 8192*1024` (unparenthesized macros) | `#define SIZE (8192*1024)` or `enum { SIZE = 8192*1024 };` or `static const int SIZE = 8192*1024;` | Unparenthesized macros are a textual substitution hazard. C99+ `enum` constants or `static const` variables avoid this entirely. |
+| `scanf("%s", buf)` for string input | `fgets` + `sscanf`, or `scanf("%255s", buf)` with width limit | Unbounded `%s` reads are buffer overflows waiting to happen. |
+
+### Largely Obsolete
+
+- **System V IPC message queues** (`msgsnd.c`, `msgrcv.c`). While the API still exists in the kernel, it has been almost entirely replaced by POSIX message queues (`mq_open`, `mq_send`, `mq_receive`), Unix domain sockets, or higher-level messaging systems. System V message queues have awkward semantics, poor tooling, and kernel-limited resource caps. New code should not use them.
+- **System V shared memory** (`small_shm_load.c`, `small_shm_get.c`). Similarly superseded by POSIX shared memory (`shm_open` + `mmap`), which integrates cleanly with the filesystem namespace and `mmap`. The System V `shmget`/`shmat` interface is clunky by comparison and persists mainly for legacy compatibility.
+- **Hand-rolling `atoi` and `itoa`** (`atoi.c`, `itoa.c`). Useful as learning exercises, but in practice `strtol`/`strtoul` and `snprintf` have completely replaced the need for custom implementations.
+- **Hand-rolling `strrev`** (`strrev.c`). String reversal is a classic interview/teaching exercise but has essentially no real-world use case in C. If needed, it is a one-liner with pointer swaps -- no allocation required.
+- **Usenet-specific tooling** (`urlExtract.c`). The zlib-based Usenet article parser is a product of its time. Usenet itself is a niche protocol in 2026, and URL extraction from text would today be done with a regex library or a higher-level language entirely.
+- **`malloc_stats()`** (`mmap_malloc_test1-3.c`). This is a glibc extension, not portable, and modern memory analysis uses tools like Valgrind, AddressSanitizer, or `jemalloc`/`tcmalloc` introspection APIs.
+
+### What You'd Do Differently Today
+
+If rewriting these examples for a modern audience:
+
+- **Target C17 or C23** as the baseline standard.
+- **Use `bool` from `<stdbool.h>`** (or the C23 built-in `bool`) instead of `int` flags.
+- **Use `size_t`** for sizes and lengths, and `%zu` in printf format strings.
+- **Use `static_assert`** (C11+) where compile-time invariants matter.
+- **Use `errno` and `strerror`** consistently for error reporting instead of ad-hoc messages.
+- **Use POSIX IPC** (`shm_open`, `mq_open`) instead of System V equivalents.
+- **Use `getopt` or `getopt_long`** for command-line parsing instead of raw `argc`/`argv` checks.
+- **Compile with `-Wall -Wextra -Werror -pedantic`** -- most of the bugs in this collection would have been caught at compile time.
